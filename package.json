@@ -1,0 +1,22 @@
+{
+  "name": "arthals-ics-slides",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "slidev build",
+    "dev": "slidev --open",
+    "remote": "slidev --remote",
+    "export": "slidev export"
+  },
+  "dependencies": {
+    "@iconify/json": "^2.2.246",
+    "@slidev/cli": "^0.49.29",
+    "@slidev/theme-default": "latest",
+    "@slidev/theme-seriph": "latest",
+    "slidev-theme-academic": "^2.0.1",
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "playwright-chromium": "^1.47.0"
+  }
+}
