@@ -1,11 +1,18 @@
-# Welcome to [Slidev](https://github.com/slidevjs/slidev)!
+# Arthals-ICS-Slides
 
-To start the slide show:
+我的 ICS 小班授课 Slides。
 
-- `npm install`
-- `npm run dev`
-- visit <http://localhost:3030>
+基于 [Slidev](https://sli.dev/) 构建。
 
-Edit the [slides.md](./slides.md) to see the changes.
+## 使用
 
-Learn more about Slidev at the [documentation](https://sli.dev/).
+```bash
+git clone https://github.com/zhuozhiyongde/Arthals-ICS-Slides.git
+cd Arthals-ICS-Slides
+pnpm install
+pnpm run dev
+```
+
+## 许可
+
+GPLv3
