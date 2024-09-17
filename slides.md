@@ -226,7 +226,7 @@ bit shift
 
 <div>
 
-- 逻辑左移 / 算术左移：右边补0
+- 逻辑左移 / 算术左移：右边补 0
 
 </div>
 
@@ -295,44 +295,17 @@ integer encoding
 
 
 对于有符号数，取值范围是不对称的，典型例子 int：
-  - $\text{TMax}_{32} = 2147483647$
-  - $\text{TMin}_{32} = -2147483648$
+
+- $\text{TMax}_{32} = 2147483647$
+- $\text{TMin}_{32} = -2147483648$
 
 <span class="text-sm">为什么？ 0：在想我的事？</span>
-
-<div grid="~ cols-2 gap-12">
-
-<div>
-
-#### 证明： `~x + 1 = -x`
-
-证：
-
-$$
-\begin{aligned}
-\sim x + 1 &= -x \\
-\sim x + x &= -1 \\
-\end{aligned}
-$$
-
-
-</div>
-
-<div>
-
-#### 证明： $\text{TMax} + 1 = \text{TMin}$
-
-证：想想消消乐
-
-</div>
-
-</div>
 
 ---
 
 # 数据的其他表示
 
-Other representations
+other representations
 
 ### 反码
 
@@ -539,6 +512,40 @@ determine overflow
 
 这是一个做题很方便的技巧！
 
+<div grid="~ cols-2 gap-12">
+
+<div>
+
+#### 证明： `~x + 1 = -x` (`x != TMin`)
+
+证：
+
+$$
+\begin{aligned}
+\sim x + 1 &= -x \\
+\sim x + x &= -1 \\
+\end{aligned}
+$$
+
+
+</div>
+
+<div>
+
+#### 证明： $\text{TMax} + 1 = \text{TMin}$
+
+证：想想消消乐
+
+$$
+\begin{aligned}
+0111...1111 + 1 = 1000...0000
+\end{aligned}
+$$
+
+</div>
+
+</div>
+
 ---
 
 # 补码的非运算
@@ -557,7 +564,7 @@ two's complement negation
   
   但是，两个 $\text{TMin}_w$ 相加，溢出到了上一位，结果是 0，所以此时我们说 $\text{TMin}_w$ 的算数逆元就是它自身
 
-回忆：之前说的 `~x + 1 = -x`
+回忆：刚才说的 `~x + 1 = -x`
 ---
 
 # 乘除法
@@ -629,6 +636,8 @@ floating point
 
 各个位长多少要牢牢记清楚！考试会考！
 
+<span class="text-sm">注意，0 的表示有两种，+0 和 -0</span>
+
 </div>
 
 <div>
@@ -683,9 +692,74 @@ $$
 
 underlying IEEE 754
 
+<div grid="~ cols-2 gap-12">
+
+<div>
+
+### 无穷（$\pm \infty$）
+
+- 符号位 $s$ 区分正无穷/负无穷
+- 阶码 $[e] = 1...1$（全1），尾数 $M = 0$
+- 表示无穷大，在计算中可以用于表示溢出或未定义的结果
+
+</div>
+
+<div>
+
+### 非数值 (NaN，Not a Number)
+
+- 符号位 $s$ 任意，阶码 $[e] = 1...1$（全1），尾数 $M \ne 0$
+- NaN 用于表示未定义或无法表示的值，例如 $0/0$ 或 $\sqrt{-1}$
+- 通常在比较中被认为不等于任何值，包括自身{.text-yellow-5}
+
+</div>
+
+
+<div>
+
+### 零
+
+- 符号位 $s$ 任意，阶码 $[e] = 0...0$（全0），尾数 $M = 0$
+
+</div>
+
+<div>
+
+### 特殊值的应用
+
+- 处理异常情况：如除零错误、溢出、下溢等
+- 提高计算的鲁棒性，避免程序崩溃
+- 在数值算法中用于标记和处理特殊情况
+
+</div>
+
+</div>
+
+<!-- <div grid="~ cols-2 gap-12">
+
+<div>
+
+### 特殊值
+
+
+
+</div>
+
+<div>
+
+</div>
+
+</div> -->
+
+---
+
+# 理解 IEEE 754
+
+underlying IEEE 754
+
 ### 平滑过渡
 
-考虑某一进制，$e=2$，$m=3$
+考虑某一进制，$e=2$，$m=3$（考试的时候可能就会考改变进制的题哦！）
 
 
 <div grid="~ cols-2 gap-12">
@@ -749,6 +823,8 @@ $$
 
 # 浮点运算
 
+floating point arithmetic
+
 - 加法可交换，加法不可结合，`NaN`没有加法逆元
 - 浮点加法单调性，如果 $a \ge b$，那么对于任何 $a$，$b$ 以及 $x$ 的值，除了 `NaN` 都有 $x + a \ge x + b$
 - 乘法可交换，乘法不可结合，乘法在加法上不可分配
@@ -756,7 +832,13 @@ $$
 
 <span class="text-sm text-gray-500">* 这些东西说了没用，得你自己做题踩坑才会知道。</span>
 
-### IEEE 754 异常{.mt-6}
+---
+
+# 浮点运算
+
+floating point arithmetic
+
+### IEEE 754 异常
 
 - Invalid operation：零乘无穷、零除零、无穷除无穷、无穷绝对值相减......
 - Division by zero：有穷数除零结果为无穷
