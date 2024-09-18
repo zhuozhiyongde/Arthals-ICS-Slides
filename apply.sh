@@ -23,3 +23,12 @@ do
     fi
   fi
 done
+
+# 创建目标目录
+TARGET_DIR="/opt/1panel/apps/openresty/openresty/www/sites/slide.huh.moe/index/$BASE"
+sudo mkdir -p "$TARGET_DIR"
+
+# 复制 dist 目录内容到目标目录
+sudo cp -r dist/* "$TARGET_DIR"
+
+echo "Files have been copied to $TARGET_DIR"
