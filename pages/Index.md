@@ -68,6 +68,7 @@ TOC
 
 0. [课程介绍 / Introduction](https://slide.huh.moe/00/)
 1. [数据表示 / Data Representation](https://slide.huh.moe/01/)
+2. [程序的机器表示 I / Machine Programming I](https://slide.huh.moe/02/)
 
 </div>
 
