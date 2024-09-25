@@ -658,7 +658,7 @@ condition code / flags
 
 包括 `testb` / `testw` / `testl` / `testq`
 
-计算 `s1 & s2`，同样只会影响条件码的值{.text-sky-5}。
+计算 `s1 & s2`，<span text="sky-5">同样只会影响条件码的值</span>。
 
 </div>
 </div>
