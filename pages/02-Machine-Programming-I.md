@@ -22,6 +22,7 @@ transition: fade-out
 mdc: true
 layout: cover
 coverBackgroundUrl: /02-Machine-Programming-I/cover.jpg
+colorSchema: dark
 ---
 
 # 程序的机器表示 I {.font-bold}
@@ -624,14 +625,6 @@ condition code / flags
 - 逻辑操作（`AND`、`OR`、`XOR`、`NOT`）会把 `CF` 和 `OF` 设置成 0
 - 移位操作会把 `CF` 设置为最后一个被移出的位，`OF` 设置为 0
 - `INC` 和 `DEC` 指令会设置 `OF` 和 `ZF`，但是不会改变 `CF`
-
-思考：无符号数做加减法，会设置 `OF` 标志位吗？
-
-<div v-click text="sky-5">
-
-不会，因为 `OF` 要求有符号数运算。
-
-</div>
 
 ---
 
