@@ -9,8 +9,15 @@ if [ -z "$BASE" ]; then
   exit 1
 fi
 
+# 复制 pages/ 下的 BASE 开头的文件到 .
+cp -r pages/$BASE* .
+
+# 获取 BASE* 的完整文件名
+
+FULL_NAME=$(ls ./$BASE*)
+
 # 运行 slidev build 命令
-slidev build --base /$BASE/
+slidev build --base /$BASE/ $FULL_NAME
 
 # 遍历 dist 目录，删除符合条件的文件夹
 for dir in dist/[0-9]*
@@ -32,3 +39,5 @@ sudo mkdir -p "$TARGET_DIR"
 sudo cp -r dist/* "$TARGET_DIR"
 
 echo "Files have been copied to $TARGET_DIR"
+
+git reset --hard origin/main
