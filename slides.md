@@ -899,6 +899,99 @@ struct S2 {
 
 </div>
 
+
+---
+
+# 结构体对齐示例
+
+structure alignment example
+
+在 x86-64 平台下，Linux 操作系统中，定义如下的 C 结构体：
+
+<div grid="~ cols-3 gap-12">
+<div>
+
+#### 定义
+
+```c
+struct A {
+    char CC1[6];
+    int II1;
+    long LL1;
+    char CC2[10];
+    long LL2;
+    int II2;
+};
+```
+
+</div>
+
+<div grid-col-span-2>
+
+#### 回答以下问题：
+
+1. `sizeof(A)` 为？<span class="text-red-5" v-click>6(2) + 4(4) + 8 + 10(6) + 8 + 4(4) = 56</span>
+2. 若将结构体重排，尽量减少结构体的大小，得到的新结构体大小？
+    <br><span class="text-red-5" v-click>6 + 10 + 4 + 4 + 8 + 8= 40</span>
+
+</div>
+</div>
+
+<div v-click text-sky-5>
+
+技巧：
+- 尽量减少结构体的大小：依据数据类型大小排序，从小到大 / 从大到小都可
+- 结构体的对齐以其中最大的数据类型为准，对于嵌套的 `union` `struct` 以其内部最大的为准
+
+</div>
+
+---
+
+# 结构体对齐示例
+
+structure alignment example
+
+<div grid="~ cols-3 gap-12">
+<div>
+
+
+
+#### 定义
+
+```c
+typedef union {
+    char c[7];
+    short h;
+} union_e;
+
+typedef struct {
+    char d[3];  // 4
+    union_e u;  // 8
+    int i;      // 4
+} struct_e;
+
+struct_e s;
+```
+
+</div>
+
+<div grid-col-span-2>
+
+
+#### 回答以下问题：
+
+1. `s.u.c` 的首地址相对于 `s` 的首地址的偏移量是？<span class="text-red-5" v-click>4</span>
+2. `sizeof(union_e)`为？<span class="text-red-5" v-click>8</span>
+3. `s.i` 的首地址相对于 `s` 的首地址的偏移量是？<span class="text-red-5" v-click>12</span>
+4. `sizeof(struct_e)`为？<span class="text-red-5" v-click>16</span>
+5. 若只将 `i` 的类型改成 `short`，那么 `sizeof(struct_e)`为？<span class="text-red-5" v-click>14</span>
+6. 若只将 `h` 的类型改成 `int`，那么 `sizeof(union_e)`为？<span class="text-red-5" v-click>8</span>
+7. 若将 `i` 的类型改成 `short`，将 `h` 的类型改成 `int`，那么 `sizeof(union_e)`为？`sizeof(struct_e)`为？<span class="text-red-5" v-click>8 16</span>
+8. 若将 `short h` 的定义删除，那么 (1)~(4) 间的答案分别是？<span class="text-red-5" v-click>3 7 12 16</span>
+
+</div>
+</div>
+
 ---
 
 # 强制对齐
