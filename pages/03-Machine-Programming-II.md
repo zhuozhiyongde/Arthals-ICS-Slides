@@ -498,7 +498,7 @@ int *(*p[2])[3];
 
 </div>
 
-<div>
+<div text-sm>
 
 让我们逐步解码：
 
@@ -851,13 +851,26 @@ alignment
 | 8  | `long` `double` `char*` |
 
 
+
 ---
 
-# 结构体对齐示例
+# 结构体对齐
 
-structure alignment example
+structure alignment
 
-下面的例子展示了如何对结构体进行对齐：
+在结构体的内存中，有一部分为了对齐而空出的字节
+
+- 内部填充：为了满足每个长度为 $K$ 的数据相对于首地址的偏移都是 $K$ 的倍数
+- 外部填充：为了满足内存总长度是最大的 $K$ 的倍数
+
+
+---
+
+# 内部填充
+
+internal padding
+
+内部填充：为了满足每个长度为 $K$ 的数据相对于首地址的偏移都是 $K$ 的倍数
 
 ```c
 struct S1 {
@@ -869,15 +882,15 @@ struct S1 {
 
 虽然结构体的三个元素总共只占 9 字节，但为了满足变量 `j` 的对齐，内存布局要求填充一个 3 字节的间隙，这样 `j` 的偏移量将是 8，也就导致了整个结构体的大小达到 12 字节。
 
-![alignment](/03-Machine-Programming-II/alignment.png){.h-50.mx-auto}
+![alignment](/03-Machine-Programming-II/alignment.png){.h-45.mx-auto}
 
 ---
 
-# 结构体对齐示例
+# 外部填充
 
-structure alignment example
+external padding
 
-继续考虑另一个结构体的定义：
+外部填充：为了满足内存总长度是最大的 $K$ 的倍数
 
 ```c
 struct S2 {
@@ -889,7 +902,7 @@ struct S2 {
 
 此时，正常排确实可以只需要 9 字节，且同时满足了 `i` 和 `j` 的对齐要求。
 
-但是，因为要考虑可能会有 `S2[]` 这种数组声明，且数组又要求各元素在内存中连续，所以编译器实际上会为结构体分配 12 字节，最后 3 个字节是浪费的空间。
+但是，因为要考虑可能会有 `S2[N]` 这种数组声明，且数组又要求各元素在内存中连续，所以编译器实际上会为结构体分配 12 字节，最后 3 个字节是浪费的空间。
 
 ![alignment-2](/03-Machine-Programming-II/alignment-2.png){.w-100.mx-auto}
 
@@ -905,8 +918,6 @@ struct S2 {
 # 结构体对齐示例
 
 structure alignment example
-
-在 x86-64 平台下，Linux 操作系统中，定义如下的 C 结构体：
 
 <div grid="~ cols-3 gap-12">
 <div>
