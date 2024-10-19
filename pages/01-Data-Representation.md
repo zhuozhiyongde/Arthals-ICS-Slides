@@ -22,7 +22,6 @@ transition: fade-out
 mdc: true
 layout: cover
 coverBackgroundUrl: /01-Data-Representation/cover.jpg
-colorSchema: dark
 ---
 
 # 数据表示 {.font-bold}

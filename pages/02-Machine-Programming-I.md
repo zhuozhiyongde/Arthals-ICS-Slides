@@ -22,7 +22,6 @@ transition: fade-out
 mdc: true
 layout: cover
 coverBackgroundUrl: /02-Machine-Programming-I/cover.jpg
-colorSchema: dark
 ---
 
 # 程序的机器表示 I {.font-bold}

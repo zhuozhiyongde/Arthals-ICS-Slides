@@ -22,7 +22,6 @@ transition: fade-out
 mdc: true
 layout: cover
 coverBackgroundUrl: /00-Introduction/cover.jpg
-colorSchema: dark
 ---
 
 # 欢迎来到 ICS 课程 {.font-bold}
