@@ -48,12 +48,16 @@ before we start
 
 - 本章内容极多，需要至少仔细阅读 CS:APP 两遍
 - 对于 SEQ、PIPE 的实现、线是怎么连接的，信号是怎么产生、在什么时候产生的，都需要完全理解、背诵
-- 对于冲突的解决，也需要完全理解、背诵
-- 参考资料： [CMU / HCL Descriptions of Y86-64 Processors](https://csapp.cs.cmu.edu/3e/waside/waside-hcl.pdf)，Y86-64 指令集，HCL 完整版，第四章 Arch 复习必备
+- 对于冒险的解决，也需要完全理解、背诵
 - 建议大家多开一个 https://slide.huh.moe/05/ 方便听课时回翻。
 - ~~建议变身医学牲，全背就完了。~~ 符号很多，推荐理解性记忆。
 - 本次备课花了我大量时间，希望大家好好听讲。
 - 看书！看书！看书！
+
+
+参考资料：
+- [CMU / HCL Descriptions of Y86-64 Processors](https://csapp.cs.cmu.edu/3e/waside/waside-hcl.pdf)，Y86-64 指令集，HCL 完整版，第四章 Arch 复习必备
+- [可视化 y86-64 处理器](https://www.ly86-64.com/simulator)，可以方便地看到每条指令执行时各个信号的变化，包括常见冒险、自定义指令
 
 ---
 
@@ -611,7 +615,7 @@ word new_pc = [
 </div>
 </div>
 
-<button @click="$nav.go(25)">🔙</button>
+<button @click="$nav.go(26)">🔙</button>
 
 ---
 
@@ -746,7 +750,7 @@ mrmovq 100(%rbx), %rdx  ; 从内存地址rbx+100读取值到寄存器rdx中
 
 SEQ vs SEQ+
 
-- 在 SEQ 中，PC 计算发生在时钟周期结束的时候，根据当前时钟周期内计算出的信号值来计算 PC 寄存器的新值。<button @click="$nav.go(20)">💡</button>
+- 在 SEQ 中，PC 计算发生在时钟周期结束的时候，根据当前时钟周期内计算出的信号值来计算 PC 寄存器的新值。<button @click="$nav.go(21)">💡</button>
 - 在 SEQ+ 中，我们需要在每个时钟周期都可以取出下一条指令的地址，所以更新 PC 阶段在一个时钟周期开始时执行，而不是结束时才执行。
 - **SEQ+ 没有硬件寄存器来存放程序计数器**。而是根据从前一条指令保存下来的一些状态信息动态地计算 PC。
 
