@@ -6,7 +6,7 @@ theme: academic
 # background: https://cover.sli.dev
 highlighter: shiki
 # some information about your slides (markdown enabled)
-title: 04-Arch-ISA-and-Logic
+title: 05-Arch-Sequential-and-Pipelined
 info: |
   ICS 2024 Fall Slides
   Presented by Arthals
@@ -21,10 +21,10 @@ transition: fade-out
 # enable MDC Syntax: https://sli.dev/features/mdc
 mdc: true
 layout: cover
-coverBackgroundUrl: /04-Arch-ISA-and-Logic/cover.jpg
+coverBackgroundUrl: /05-Arch-Sequential-and-Pipelined/cover.jpg
 ---
 
-# 程序的机器表示 III & ISA {.font-bold}
+# 处理器架构：顺序与流水线 {.font-bold}
 
 2110306206 预防医学&信双 卓致用{.!text-gray-200}
 
@@ -42,1203 +42,1981 @@ coverBackgroundUrl: /04-Arch-ISA-and-Logic/cover.jpg
 
 ---
 
-# C 语言中的复合类型
+# 前言
 
-composite types in C Language
+before we start
 
-<div grid="~ cols-3 gap-12">
-<div>
-
-### 数组（Arrays）
-
-- 连续的内存分配
-- 按照每个元素的对齐要求进行对齐
-- 指向第一个元素的指针
-- 不进行边界检查{.text-sky-5}
-  ```c
-  int arr[3] = {1, 2, 3};
-  int var = arr[3];
-  ```
-
-</div>
-
-<div>
-
-### 结构体（Structures）
-
-- 按声明的顺序分配字节
-- 中间和末尾填充以满足对齐要求
-
-</div>
-
-<div>
-
-### 联合体（Unions）
-
-- 重叠声明
-- 是绕过类型系统的方式
-
-</div>
-</div>
+- 本章内容极多，需要至少仔细阅读 CS:APP 两遍
+- 对于 SEQ、PIPE 的实现、线是怎么连接的，信号是怎么产生、在什么时候产生的，都需要完全理解、背诵
+- 对于冲突的解决，也需要完全理解、背诵
+- 参考资料： [CMU / HCL Descriptions of Y86-64 Processors](https://csapp.cs.cmu.edu/3e/waside/waside-hcl.pdf)，Y86-64 指令集，HCL 完整版，第四章 Arch 复习必备
+- 建议大家多开一个 https://slide.huh.moe/05/ 方便听课时回翻。
+- ~~建议变身医学牲，全背就完了。~~ 符号很多，推荐理解性记忆。
+- 本次备课花了我大量时间，希望大家好好听讲。
+- 看书！看书！看书！
 
 ---
 
-# 字节顺序对于类型转换的影响
+# 小班回课给分相关
 
-the impact of byte order on type conversion
+score
+
+考虑到某些同学会想要内卷（虽然我不太鼓励大家卷这个，卷考试会更香，但确实小班给分会有优秀率限制），所以明确一下我的评分标准：
+
+1. 我不太会给同学们太低的分，除非你写的实在过于草率
+2. 我希望回课的同学至少能够认真掌握自己回课的部分
+3. 为了大家的理解，以及我的身心健康，我希望大家不要大片 copy 大班 PPT 或者书（这部分内容可以有，但必然和我本来就要有的内容会相同很多），更多的给出一些像我一样的便于理解的 tips、一两句话说明一个精髓的点、某些看完书不容易关注的犄角旮旯的考试知识点啥的这些对大伙更实用的东西，具体可以参考我已经公布的我制作的 Slide
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+处理一条指令通常包含以下几个阶段：
+
+1. 取指（Fetch）
+2. 译码（Decode）
+3. 执行（Execute）
+4. 访存（Memory）
+5. 写回（Write Back）
+6. 更新PC（PC Update）
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-```c  {*}{maxHeight:'380px'}
-union {
-    unsigned char c[8];
-    unsigned short s[4];
-    unsigned int i[2];
-    unsigned long l[1];
-} dw;
+### 1. 取指（Fetch）
 
-int main() {
-    // 初始化字符数组
-    for (int j = 0; j < 8; j++)
-        dw.c[j] = 0xf0 + j;
-    // 打印字符数组
-    printf("Characters 0-7 == [0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x]\n",
-        dw.c[0], dw.c[1], dw.c[2], dw.c[3],
-        dw.c[4], dw.c[5], dw.c[6], dw.c[7]);
-    // 打印短整型数组
-    printf("Shorts 0-3 == [0x%x, 0x%x, 0x%x, 0x%x]\n",
-        dw.s[0], dw.s[1], dw.s[2], dw.s[3]);
-    // 打印整型数组
-    printf("Ints 0-1 == [0x%x, 0x%x]\n",
-        dw.i[0], dw.i[1]);
-    // 打印长整型数组
-    printf("Long 0 == [0x%lx]\n",
-        dw.l[0]);
-}
-```
+**操作**：取指阶段从内存中读取指令字节，地址由程序计数器 (PC) 的值决定。
 
-</div>
 
-<div>
 
-运行结果：
-
-```
-Characters 0-7 == [0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7]
-Shorts 0-3 == [0xf1f0, 0xf3f2, 0xf5f4, 0xf7f6]
-Ints 0-1 == [0xf3f2f1f0, 0xf7f6f5f4]
-Long 0 == [0xf7f6f5f4f3f2f1f0]
-```
-
-</div>
-</div>
-
----
-
-<div grid="~ cols-2 gap-12">
 <div text-sm>
 
-# x86-64 Linux 内存布局
+读出的指令由如下几个部分组成：
 
-memory layout
+- `icode`：指令代码，指示指令类型，是指令字节的低 4 位
+- `ifun`：指令功能，指示指令的子操作类型，是指令字节的高 4 位（不指定时为 0）
+- `rA`：第一个源操作数寄存器（可选）
+- `rB`：第二个源操作数寄存器（可选）
+- `valC`：常数，Constant（可选）
 
-- **栈（Stack）**
-  - 运行时栈（8MB 限制）
-  - 例如：局部变量
-- **堆（Heap）**
-  - 按需动态分配
-  - 当调用 `malloc()` `calloc()` `new()`
-- **数据（Data）**
-  - 静态分配数据
-  - 例如：全局变量、静态变量、字符串常量
-- **文本 / 共享库（Text / Shared Libraries）**
-  - 可执行的机器指令
-  - 只读，尝试写会导致段错误
-  <br>（Segmentation Fault）{.text-gray-5}
+</div>
 
-注意始末地址：自 $0\text{x}400000$ 到 $2^{48} -1$ 是用户态空间，再往上是内核态（操作系统）
+<div text-sm text-gray-5 mt-4>
 
+各个不同名称的指令一般具有不同的 `icode`，但是也有可能共享相同的 `icode`，然后通过 `ifun` 区分。
+
+</div>
 </div>
 
 <div>
 
-![memory-layout](/04-Arch-ISA-and-Logic/memory-layout.png)
+![fetch](/05-Arch-Sequential-and-Pipelined/fetch.png)
 
 </div>
 </div>
-
 
 ---
 
-# 内存分配示例
+# Y86-64 的顺序实现
 
-example of memory allocation
+sequential implementation
 
 <div grid="~ cols-2 gap-12">
 <div>
 
+### 1. 取指（Fetch）
 
-```c
-char big_array[1L<<24]; // 16 MB
-char huge_array[1L<<31]; // 2 GB
+**操作**：取指阶段从内存中读取指令字节，地址由程序计数器 (PC) 的值决定。
 
-int global = 0;
+<div text-sm>
 
-int useless() { return 0; }
+- `ifun` 在除指令为 `OPq`，`jXX` 或 `cmovXX` 其中之一时都为 0
+- `rA`，`rB` 为寄存器的编码，取值为 0 到 F，每个编码对应着一个寄存器。注意当编码为 F 时代表无寄存器。
+- `rA`，`rB` 并不是每条指令都有的，`jXX`，`call` 和 `ret` 就没有 `rA` 和 `rB`，这在 HCL 中通过 `need_regids` 来控制
+- `valC` 为 8 字节常数，可能代表立即数（`irmovq`），偏移量（`rmmovq` `mrmovq`）或地址（`call` `jmp`）。`valC` 也不是每条指令都有的，这在 HCL 中通过 `need_valC` 来控制
 
-int main () {
-    void *phuge1, *psmall12, *phuge3, *psmall14;
-    int local = 0;
-    phuge1 = malloc(1L << 28); // 256 MB
-    psmall12 = malloc(1L << 8); // 256 B
-    phuge3 = malloc(1L << 32); // 4 GB
-    psmall14 = malloc(1L << 8); // 256 B
-    /* Some print statements ... */
-}
+
+</div>
+</div>
+
+<div>
+
+![fetch](/05-Arch-Sequential-and-Pipelined/fetch.png)
+
+</div>
+</div>
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+### 2. 译码（Decode）
+
+**操作**：译码阶段从寄存器文件读取操作数，得到 `valA` 和 / 或 `valB`。
+
+一般根据上一阶段得到的 `rA` 和 `rB` 来确定需要读取的寄存器。
+
+也有部分指令会读取 `rsp` 寄存器（`popq` `pushq` `ret` `call`）。
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+### 3. 执行（Execute）
+
+**操作**：执行阶段，算术/逻辑单元（ALU）进行运算，包括如下情况：
+
+- 执行指令指明的操作（`opq`）
+- 计算内存引用的地址（`rmmovq` `mrmovq`）
+- 增加/减少栈指针（`pushq` `popq`）<span text-sm text-gray-5>其中加数可以是 +8 或 -8</span>
+
+最终，我们把此阶段得到的值称为 `valE`（Execute stage value）。
+
+一般来讲，这里使用的运算为加法运算，除非是在 `OPq` 指令中通过 `ifun` 指定为其他运算。这个阶段还会：
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+设置条件码（`OPq`）：
+
+```hcl
+set CC
 ```
 
 </div>
 
 <div>
 
-![memory-layout-2](/04-Arch-ISA-and-Logic/memory-layout-2.png)
+检查条件码和和传送条件（`jXX` `cmovXX`）：
 
-</div>
-</div>
-
----
-
-# 内存分配示例
-
-example of memory allocation
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-1. **全局变量和数组**：
-   ```c
-   char big_array[1L<<24];  /* 16 MB */
-   char huge_array[1L<<31]; /* 2 GB */
-   int global = 0;
-   ```
-   - **位置**：Data 段
-   - **原因**：全局变量和静态变量在程序启动时分配内存，存在于 Data 段中，直到程序结束。
-
-</div>
-
-<div>
-
-![memory-layout-2](/04-Arch-ISA-and-Logic/memory-layout-2.png)
-
-</div>
-</div>
-
----
-
-# 内存分配示例
-
-example of memory allocation
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-2. **局部变量**：
-   ```c
-   int main () {
-      //...
-      int local = 0;
-      //...
-   }
-   ```
-   - **位置**：Stack 段
-   - **原因**：局部变量在函数调用时分配内存，存在于栈中，函数返回后内存释放。
-   - **注意**：栈帧的大小是有限的，递归函数会导致栈帧的深层嵌套，当栈帧满时，会发生栈溢出（Stack Overflow）。递归判断出口条件出错使得无限调用函数时会出现这种错误。
-
-</div>
-
-<div>
-
-![memory-layout-2](/04-Arch-ISA-and-Logic/memory-layout-2.png)
-
-</div>
-</div>
-
----
-
-# 内存分配示例
-
-example of memory allocation
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-3. **动态内存分配**：
-   ```c
-   void *phuge1, *psmall2, *phuge3, *psmall4;
-   phuge1 = malloc(1L << 28);  /* 256 MB */
-   psmall2 = malloc(1L << 8);  /* 256 B */
-   phuge3 = malloc(1L << 32);  /* 4 GB */
-   psmall4 = malloc(1L << 8);  /* 256 B */
-   ```
-   - **位置**：Heap 段
-   - **原因**：`malloc` 函数动态分配内存，内存块从堆中分配，手动管理分配和释放。对于大的块，可能会分配到共享库附近。
-
-</div>
-
-<div>
-
-![memory-layout-2](/04-Arch-ISA-and-Logic/memory-layout-2.png)
-
-</div>
-</div>
-
----
-
-# 内存分配示例
-
-example of memory allocation
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-4. **函数代码**：
-   ```c
-   int useless() { return 0; }
-   int main () { ... }
-   ```
-   - **位置**：Text 段
-   - **原因**：程序的代码部分存储在 Text 段中，包含所有的函数代码。
-
-</div>
-
-<div>
-
-![memory-layout-2](/04-Arch-ISA-and-Logic/memory-layout-2.png)
-
-</div>
-</div>
-
----
-
-# 内存分配总结
-
-summary of memory allocation
-
-- **全局变量和静态变量**（如`big_array`、`huge_array`、`global`）在 Data 段，程序启动时分配内存。
-- **局部变量**（如`local`）在 Stack 段，函数调用时分配内存，函数返回后释放。
-- **动态分配的内存**（如`phuge1`、`psmall2`等）在 Heap 段，通过`malloc`分配，需要手动释放，对于大的块，可能会分配到共享库附近。
-- **代码段**（如`useless`函数和`main`函数）在 Text 段，包含程序的指令。
-
----
-
-# 缓冲区溢出
-
-buffer overflow
-
-**缓冲区溢出**：指当程序试图将数据写入超出其分配的内存区域时发生的一种错误。
-
-前置条件：
-
-- 未正确检查输入数据的边界或者长度，导致数据溢出到相邻的内存区域。
-- 局部变量和状态信息（如备份的被调用者保存寄存器）都存放在栈中，可能与缓冲区（数组）相邻。
-
-
-此时，越界写操作会破坏存储在栈中的状态信息。
-
-当程序使用这个被破坏的状态，试图重新加载寄存器或执行 `ret` 指令时，就会出现很严重的错误。
-
-尤其是一些字符串输入的函数容易出现溢出，如 `strcpy` `sprintf` `scanf` `gets` 等。
-
----
-
-# ROP 攻击
-
-return-oriented programming attack
-
-ROP 攻击是一种利用程序中已有的指令片段（gadget）来构造出特定指令序列的技术。
-
-通过精心构造的指令序列，可以实现对程序的控制，绕过安全机制，执行任意代码。
-
-1. 找到许多以 `ret`（`0xc3`）结尾的小代码段（gadget）
-2. 把他们的地址逐一放以某个栈上返回地址结尾的一段内存中
-3. 这些小代码段被正常的过程返回机制逐一执行
-
-在 Attacklab 中，你会亲手实现 ROP 攻击！
-
----
-
-# ROP 攻击
-
-return-oriented programming attack
-
-<div grid="~ cols-3 gap-12">
-<div>
-
-```c
-/* Echo Line */
-void echo() {
-    char buf[4]; /* Way too small! */
-    gets(buf);
-}
+```hcl
+Cnd <- Cond(CC, ifun)
 ```
 
-这段代码分配了一个大小为 4 字节的缓冲区，然后调用 `gets` 函数从标准输入读取一行数据并存储在缓冲区中。
+</div>
+</div>
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+### 4. 访存（Memory）
+
+**操作**：访存阶段可以将数据写入内存（`rmmovq` `pushq` `call`），或从内存读取数据（`mrmovq` `popq` `ret`）
+
+- 若是向内存写，则：
+  - 写入的地址为 `valE`（需要计算得到，`rmmovq` `pushq` `call`）
+  - 数据为 `valA`（`rmmovq` `pushq`） 或 `valP`（`call`）
+- 若是从内存读，则：
+  - 地址为 `valA`（`popq` `ret`，此时 `valB` 用于计算更新后的 `%rsp`） 或者 `valE`（需要计算得到，`mrmovq`）
+  - 读出的值为 `valM`（Memory stage value）
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+### 5. 写回（Write Back）
+
+**操作**：写回阶段最多可以写 **两个**{.text-sky-5} 结果到寄存器文件（即更新寄存器）。
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+### 6. 更新PC（PC Update）
+
+**操作**：将 PC 更新成下一条指令的地址 `new_pc`。
+
+- 对于 `call` 指令，`new_pc` 是 `valC`
+- 对于 `jxx` 指令，`new_pc` 是 `valC` 或 `valP`，取决于条件码
+- 对于 `ret` 指令，`new_pc` 是 `valM`
+- 其他情况，`new_pc` 是 `valP`
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+<div text-sm>
+
+的确有直接传 `valA` 到 `M` 的，但那一般是 `valE` 算别的去了（`rmmovq` `pushq` `popq`）。也可以理解为想要 `rrmovq` 和 `irmovq` 更统一一些所以这么设计。
+
+这里的表中没有写出 `cmovXX`，因为其与 `rrmovq` 共用同一个 `icode`，然后通过 `ifun` 区分。注意 `OPq` 的顺序，是 `valB OP valA`。
 
 </div>
 
+![seq_inst_stages_1](/05-Arch-Sequential-and-Pipelined/seq_inst_stages_1.png){.h-75.mx-auto}
+
+---
+
+# Y86-64 的顺序实现
+
+sequential implementation
+
+<div grid="~ cols-3 gap-8">
 <div>
 
-```asm
-echo:
-    subq $24, %rsp
-    movq %rsp, %rdi
-    call gets
-    ...
-```
-
-- `subq $24, %rsp`
-  <br>将栈指针向下移动 24 字节
-- `movq %rsp, %rdi`
-  <br>将栈指针的值存储到 `%rdi` 寄存器中，从而准备好 `gets` 函数的第一个参数。
+`valC` 被当做偏移量使用，与 `valB` 相加得到 `valE`，然后 `valE` 被当做地址使用。
 
 </div>
 
-<div>
+<div col-span-2>
 
-![rop-1](/04-Arch-ISA-and-Logic/rop-1.png){.mx-auto}
+![seq_inst_stages_2](/05-Arch-Sequential-and-Pipelined/seq_inst_stages_2.png){.h-90.mx-auto}
 
 </div>
 </div>
 
 ---
 
-# ROP 攻击
+# Y86-64 的顺序实现
 
-return-oriented programming attack
+sequential implementation
 
-<div grid="~ cols-2 gap-12">
+<div grid="~ cols-3 gap-8">
 <div>
 
-输入：
+`popq` 中，会将 `valA` 和 `valB` 的值都设置为 `R[%rsp]`，因为一个要用于去当内存，读出旧 `M[%rsp]` 处的值，一个要用于计算，更新 `R[%rsp]`。
 
-```c
-01234567890123456789012\0 // 24 个字符
-```
+为了统一，在 `popq` 中，用于计算的依旧是 `valB`。
 
-此时，发生了缓冲区溢出，但是没造成严重后果。
+<div text-sm>
 
-尤其注意，`gets` 函数会在缓冲区末尾自动添加一个空字符 `\0`{.text-sky-5}。
+- `pushq %rsp` 的行为：`pushq` 压入的是旧的 `%rsp`，然后 `%rsp` 减 8
+- `popq %rsp` 的行为：`popq` 读出的是旧的 `M[%rsp]`，然后 `%rsp` 加 8
 
-绿色框圈出的预期的安全输入缓冲区范围。
+↑ 其他情况：
+
+`pushq` 先 -8 再压栈；`popq` 先读出再 +8
 
 </div>
 
-<div>
+</div>
 
-![rop-2](/04-Arch-ISA-and-Logic/rop-2.png){.h-80.mx-auto}
+<div col-span-2>
+
+![seq_inst_stages_3](/05-Arch-Sequential-and-Pipelined/seq_inst_stages_3.png){.h-90.mx-auto}
 
 </div>
 </div>
 
 ---
 
-# ROP 攻击
+# Y86-64 的顺序实现
 
-return-oriented programming attack
+sequential implementation
+
+<div text-sm>
+
+`ret` 指令和 `popq` 指令类似，`call` 指令和 `pushq` 指令类似，区别只有 PC 更新的部分。
+
+所以，同样注意他们用于计算的依旧是 `valB`。
+
+</div>
+
+![seq_inst_stages_4](/05-Arch-Sequential-and-Pipelined/seq_inst_stages_4.png){.h-75.mx-auto}
+
+---
+
+# HCL 代码
+
+hardware description/control language
+
+HCL 语法包括两种表达式类型：**布尔表达式**（单个位的信息）和**整数表达式**（多个位的信息），分别用 `bool-expr` 和 `int-expr` 表示。
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-输入：
+#### 布尔表达式
 
-```c
-012345678901234567890123\0 // 25 个字符
+逻辑操作
+
+`a && b`，`a || b`，`!a`（与、或、非）
+
+字符比较
+
+`A == B`，`A != B`，`A < B`，`A <= B`，`A >= B`，`A > B`
+
+集合成员资格
+
+`A in { B, C, D }`
+
+等同于 `A == B || A == C || A == D`
+
+</div>
+
+<div>
+
+#### 字符表达式
+
+case 表达式
+
+```hcl
+[
+  bool-expr1 : int-expr1
+  bool-expr2 : int-expr2
+  ...
+  bool-exprk : int-exprk
+]
 ```
 
-此时，不仅发生了缓冲区溢出，还造成了严重后果：
+- `bool-expr_i` 决定是否选择该 case。
+- `int-expr_i` 为该 case 的值。
 
 <div text-sky-5>
 
-因为溢出到了存放返回后下一条指令的（调用者的栈帧内）区域，导致程序 `ret` 后，会跳转到错误的位置执行。
+依次评估测试表达式，返回第一个成功测试的字符表达式 `A`，`B`，`C`
 
 </div>
 
-按照这个思路，继续溢出直至恰好将整个返回地址覆盖，就可以跳转到我们想要执行的代码位置。
-
-</div>
-
-<div>
-
-![rop-3](/04-Arch-ISA-and-Logic/rop-3.png){.h-80.mx-auto}
-
 </div>
 </div>
+
 
 ---
 
-# ROP 攻击
+# 顺序实现 - 取指阶段
 
-return-oriented programming attack
-
-![rop-detail](/04-Arch-ISA-and-Logic/rop-detail.png)
-
----
-
-# 避免缓冲区溢出攻击
-
-avoid buffer overflow attack
-
-- **使用安全的函数编写程序**：`fgets` `strncpy` `snprintf`，指定每次读取的字节数
-- **地址随机化（Address Space Layout Randomization，ASLR）**：随机化程序的内存布局，使得攻击者无法事先确定数据地址
-- **限制可执行代码区域**：将可执行代码区域限制在特定的内存区域，使用页表进行限制
-- **设置金丝雀值（canary）进行栈破坏检测**：在栈帧中复制一处不可修改的地方的值过来，当程序试图覆盖返回地址时，必然会破坏金丝雀值，从而在返回时可以检测到栈溢出
-
----
-
-# 地址随机化
-
-address space layout randomization
+sequential implementation: fetch stage
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-1. **随机化栈偏移**：在程序启动时，系统会在栈上分配一个随机大小的空间。从而每次程序执行时，栈的布局都会有所不同。
-2. **栈地址的偏移**：由于栈的随机分配，整个程序的栈地址都会发生变化。这种变化使得攻击者难以预测插入代码的起始位置。从而即使插入了恶意代码，也无法准确执行。
+```hcl {*}{maxHeight:'380px'}
+# 指令代码
+word icode = [
+  imem_error: INOP; # 读取出了问题，返回空指令
+  1: imem_icode; # 读取成功，返回指令代码
+];
 
-</div>
+# 指令功能
+word ifun = [
+  imem_error: FNONE; # 读取出了问题，返回空操作
+  1: imem_ifun; # 读取成功，返回指令功能
+];
 
-<div>
+# 指令是否有效
+bool instr_valid = icode in {
+  INOP, IHALT, IRRMOVQ, IIRMOVQ, IRMMOVQ, IMRMOVQ,
+  IOPQ, IJXX, ICALL, IRET, IPUSHQ, IPOPQ
+};
 
-![aslr](/04-Arch-ISA-and-Logic/aslr.png){.h-90.mx-auto}
+# 是否需要寄存器
+bool need_regids = icode in {
+  IRRMOVQ, IOPQ, IPUSHQ, IPOPQ,
+  IIRMOVQ, IRMMOVQ, IMRMOVQ
+};
 
-</div>
-</div>
-
-<!-- main 函数也是函数，会有对应的帧栈 -->
-
----
-
-# 限制可执行代码区域
-
-restrict the executable code region
-
-给予内存区域一个 **标记**，来标志其内的字节是否可以作为代码执行。
-
-后续章节中会学到，这会通过页表的权限位来实现。
-
-类似的，还会有 **只读** 权限位。
-
----
-
-# 金丝雀值
-
-canary value
-
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-在栈帧中，除了返回地址外，还会在栈帧的末尾添加一个金丝雀值。
-
-当程序试图覆盖返回地址时，必然会破坏金丝雀值，从而在返回时可以检测到栈溢出。
-
-</div>
-
-<div>
-
-![canary](/04-Arch-ISA-and-Logic/canary.png){.h-80.mx-auto}
-
-</div>
-</div>
-
----
-
-# 金丝雀值
-
-canary value
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-```asm{3-5,11}
-echo:
-    sub $0x18,%rsp
-    mov %fs:0x28,%rax
-    mov %rax,0x8(%rsp)
-    xor %eax,%eax
-    mov %rsp,%rdi
-    callq 4006e0 <gets>
-    mov %rsp,%rdi
-    callq 400570 <puts@plt>
-    mov 0x8(%rsp),%rax
-    xor %fs:0x28,%rax
-    je 400768 <echo+0x39>
-    callq 400580 <__stack_chk_fail@plt>
-    add $0x18,%rsp
-    retq
+# 是否需要常量字
+bool need_valC = icode in {
+  IIRMOVQ, IRMMOVQ, IMRMOVQ, IJXX, ICALL
+};
 ```
 
 </div>
 
 <div>
 
-- 从特定的段寄存器 `%fs` 的偏移地址 `0x28` 加载金丝雀，并将金丝雀值存储到栈中分配的空间中，然后清除中间用过的寄存器。
-- 在函数返回前，检查金丝雀值是否被破坏，如果被破坏，则调用 `__stack_chk_fail` 函数终止程序。
+![fetch](/05-Arch-Sequential-and-Pipelined/fetch.png)
 
 </div>
 </div>
 
 ---
-layout: image-right
-image: /04-Arch-ISA-and-Logic/isa.png
----
 
-# 什么是 ISA？
+# 顺序实现 - 译码阶段
 
-Instruction Set Architecture
+sequential implementation: decode stage
 
-直译：指令集体系结构
+<div grid="~ cols-2 gap-12">
+<div>
 
-如果非要强行解释... [^1]
-
-- “汇编语言”转换到“机器码”（相当于一个翻译过程）
-- CPU 执行机器码的晶体管和逻辑电路的集合
-
-Y86-64：一种精简的 ISA
-
-[^1]: [CPU 指令集（Instruction Set Architecture, ISA） / Zhihu](https://zhuanlan.zhihu.com/p/599864602)
-
----
-
-# 程序员可见状态
-
-programmer visible state
-
-
-| 缩写 | 全称 | 描述 | 包括 |
-|------|-------|------|------|
-| RF   | Register File | 程序寄存器 | `%rax` ~ `%r14` |
-| CC   | Condition Code | 条件码 | ZF<span follow>zero</span>, OF<span follow>overflow</span>, SF<span follow>symbol</span> |
-| Stat | Status | 程序状态 | - |
-| PC   | Program Counter | 程序计数器 | - |
-| DMEM | Data Memory | 内存 | - |
-
-
-
-<style>
-span[follow] {
-  @apply text-[0.6rem];
-}
-</style>
-
----
-layout: image-right
-image: /04-Arch-ISA-and-Logic/Y86-Instruction.png
----
-
-# Y86-64 ISA
-
-一个 X86-64 的子集
-
-```md {all|1|2|3|4|5|6|7|8|9|10|11|12|13|all}
-* halt # 停机
-* nop # 空操作，可以用于对齐字节
-* cmovXX rA, rB # 如果条件码满足，则将寄存器 A 的值移动到寄存器 B
-* rrmovq rA, rB # 将寄存器 A 的值移动到寄存器 B
-* irmovq V, rB # 将立即数 V 移动到寄存器 B
-* rmmovq rA, D(rB) # 将寄存器 A 的值移动到内存地址 rB + D
-* mrmovq D(rB), rA # 将内存地址 rB + D 的值移动到寄存器 A
-* OPq rA, rB # 将寄存器 A 和寄存器 B 的值进行运算，结果存入寄存器 B
-* jXX Dest # 如果条件码满足，跳转到 Dest
-* call Dest # 跳转到 Dest，同时将下一条指令的地址压入栈
-* ret # 从栈中弹出地址，跳转到该地址
-* pushq rA # 将寄存器A的值压入栈
-* popq rA # 从栈中弹出值，存入寄存器A
+```hcl
+# 源寄存器 A 的选择
+word srcA = [
+  icode in { IRRMOVQ, IRMMOVQ, IOPQ, IPUSHQ } : rA;
+  icode in { IPOPQ, IRET } : RRSP;
+  1 : RNONE; # 不需要寄存器
+];
+# 源寄存器 B 的选择
+word srcB = [
+  icode in { IOPQ, IRMMOVQ, IMRMOVQ } : rB;
+  icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+  1 : RNONE; # 不需要寄存器
+];
 ```
 
-<div text-sm>
-
-* 第一个字节为 **代码** ，其高 4 位为操作类型，低 4 位为操作类型（fn）的具体操作（或 0）
-* F：0xF，为 Y86-64 中“不存在的寄存器”
-* 所有数值（立即数、内存地址）均以 hex 表示，为 8 字节
-
 </div>
 
----
-layout: image-right
-image: /04-Arch-ISA-and-Logic/Y86-Instruction.png
----
+<div>
 
-# Y86-64 ISA
-
-一个 X86-64 的子集
-
-```md
-* halt # 停机
-* nop # 空操作，可以用于对齐字节
-* cmovXX rA, rB # 如果条件码满足，则将寄存器 A 的值移动到寄存器 B
-* rrmovq rA, rB # 将寄存器 A 的值移动到寄存器 B
-* irmovq V, rB # 将立即数 V 移动到寄存器 B
-* rmmovq rA, D(rB) # 将寄存器 A 的值移动到内存地址 rB + D
-* mrmovq D(rB), rA # 将内存地址 rB + D 的值移动到寄存器 A
-* OPq rA, rB # 将寄存器 A 和寄存器 B 的值进行运算，结果存入寄存器 B
-* jXX Dest # 如果条件码满足，跳转到 Dest
-* call Dest # 跳转到 Dest，同时将下一条指令的地址压入栈
-* ret # 从栈中弹出地址，跳转到该地址
-* pushq rA # 将寄存器A的值压入栈
-* popq rA # 从栈中弹出值，存入寄存器A
+```hcl
+# 目标寄存器 E 的选择
+word dstE = [
+  icode in { IRRMOVQ } && Cnd : rB; # 支持 cmovXX
+  icode in { IIRMOVQ, IOPQ } : rB; # 注意这里！
+  icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+  1 : RNONE; # 不写入任何寄存器
+];
+# 目标寄存器 M 的选择
+word dstM = [
+  icode in { IMRMOVQ, IPOPQ } : rA;
+  1 : RNONE; # 不写入任何寄存器
+];
 ```
 
-<div class="text-[0.8rem]" grid="~ cols-2 gap-4">
+
+</div>
+</div>
+
+寄存器 ID `srcA` 表明应该读哪个寄存器以产生 `valA`（注意不是 `aluA`），`srcB` 同理。
+
+寄存器 ID `dstE` 表明写端口 E 的目的寄存器，计算出来的 `valE` 将放在那里，`dstM` 同理。
+
+在 SEQ 实现中，回写和译码放到了一起。
+
+---
+
+# 顺序实现 - 执行阶段
+
+sequential implementation: execute stage
+
+
+```hcl
+# 选择 ALU 的输入 A
+word aluA = [
+  icode in { IRRMOVQ, IOPQ } : valA;  # 指令码为 IRRMOVQ 时，执行 valA + 0
+  icode in { IIRMOVQ, IRMMOVQ, IMRMOVQ } : valC;  # 立即数相关，都送入的是 aluA
+  icode in { ICALL, IPUSHQ } : -8;  # 减少栈指针
+  icode in { IRET, IPOPQ } : 8;  # 增加栈指针
+  # 其他指令不需要 ALU
+];
+# 选择 ALU 的输入 B，再次强调 OPq 指令中，是 `valB OP valA`
+word aluB = [
+  icode in { IRMMOVQ, IMRMOVQ, IOPQ, ICALL, IPUSHQ, IRET, IPOPQ } : valB;  # 大部分都用 valB
+  icode in { IRRMOVQ, IIRMOVQ } : 0;  # 指令码为 IRRMOVQ 或 IIRMOVQ 时，选择 0
+  # 其他指令不需要 ALU
+];
+# 设置 ALU 功能
+word alufun = [
+  icode == IOPQ : ifun;  # 如果指令码为 IOPQ，则使用 ifun 指定的功能
+  1 : ALUADD;  # 默认使用 ALUADD 功能
+];
+# 是否更新条件码
+bool set_cc = icode in { IOPQ };  # 仅在指令码为 IOPQ 时更新条件码
+```
+
+---
+
+# 顺序实现 - 访存阶段
+
+sequential implementation: memory stage
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+
+```hcl
+# 设置读取控制信号
+bool mem_read = icode in { IMRMOVQ, IPOPQ, IRET };
+# 设置写入控制信号
+bool mem_write = icode in { IRMMOVQ, IPUSHQ, ICALL };
+# 选择内存地址
+word mem_addr = [
+  icode in { IRMMOVQ, IPUSHQ, ICALL, IMRMOVQ } : valE;
+  icode in { IPOPQ, IRET } : valA; # valE 算栈指针去了
+  # 其它指令不需要使用地址
+];
+```
+
+
+</div>
 
 <div>
-  
-* i(immediate)：立即数
-* r(register)：寄存器
-* m(memory)：内存地址{.text-sky-4}
-  
+
+
+```hcl
+# 选择内存输入数据
+word mem_data = [
+  # 从寄存器取值
+  icode in { IRMMOVQ, IPUSHQ } : valA; # valB 算地址去了
+  # 返回 PC
+  icode == ICALL : valP;
+  # 默认：不写入任何数据
+];
+# 确定指令状态
+word Stat = [
+  imem_error || dmem_error : SADR;
+  !instr_valid : SINS;
+  icode == IHALT : SHLT;
+  1 : SAOK;
+];
+```
+
 </div>
+</div>
+
+---
+
+# 顺序实现 - 更新 PC 阶段
+
+sequential implementation: update pc stage
+
+
+
+<div grid="~ cols-2 gap-12">
 <div>
-  
-* d(displacement)：偏移量
-* dest(destination)：目标地址
-* v(value)：数值
-  
+
+```hcl
+# 设置新 PC 值
+word new_pc = [
+  # 调用指令，使用指令常量
+  icode == ICALL : valC;
+  # 条件跳转且条件满足，使用指令常量
+  icode == IJXX && Cnd : valC;
+  # RET 指令完成，使用栈中的值
+  icode == IRET : valM;
+  # 默认：使用递增的 PC 值
+  # 等于上一条指令地址 + 上一条指令长度 1,2,9,10
+  1 : valP;
+];
+```
+
+</div>
+
+<div v-click>
+
+![fetch](/05-Arch-Sequential-and-Pipelined/fetch.png)
+
+
+</div>
+</div>
+
+<button @click="$nav.go(25)">🔙</button>
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# 顺序实现 - 总结
+
+sequential implementation: summary
+
+重点关注：
+
+- `valA` 和 `valB` 怎么连的
+- 什么时候 `valP` 可以直传内存
+- 什么时候 `valA` 可以直传内存
+
+<div v-click mt-4>
+
+### 答案：
+
+1. `call`
+2. `rmmovq` `pushq` `popq` `retq` （`mrmovq` 需要吗？不！）
+
+</div>
+
+</div>
+
+<div>
+
+
+
+![seq_hardware](/05-Arch-Sequential-and-Pipelined/seq_hardware.png){.h-120.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 流水线实现
+
+pipelined implementation
+
+什么是流水线？答：通过同一时间上的并行，来提高效率。
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+![without_pipeline](/05-Arch-Sequential-and-Pipelined/without_pipeline.png)
+
+</div>
+
+<div>
+
+![with_pipeline](/05-Arch-Sequential-and-Pipelined/with_pipeline.png)
+
+</div>
+</div>
+
+---
+
+# 流水线实现
+
+pipelined implementation
+
+<div class="text-sm">
+
+
+吞吐量：单位时间内完成的指令数量。
+
+单位：每秒千兆指令（GIPS，$10^9$ instructions per second，等于 1 ns（$10^{-9}$ s） 执行多少条指令再加个 G）。
+
+
+<div grid="~ cols-2 gap-8">
+<div>
+
+$$
+\text{吞吐量} = \frac{1}{(300 + 20) \text{ps}} \cdot \frac{1000 \text{ps}}{1 \text{ns}}  = 3.125 \text{GIPS}
+$$
+
+![without_pipeline](/05-Arch-Sequential-and-Pipelined/without_pipeline.png){.h-60.mx-auto}
+
+</div>
+
+<div>
+
+$$
+\text{吞吐量} = \frac{1}{(100 + 20) \text{ps}} \cdot \frac{1000 \text{ps}}{1 \text{ns}}  = 8.33 \text{GIPS}
+$$
+
+![with_pipeline](/05-Arch-Sequential-and-Pipelined/with_pipeline.png){.h-60.mx-auto}
+
+</div>
+</div>
+
+
+</div>
+
+---
+
+# 流水线实现的局限性
+
+pipelined implementation: limitations
+
+- **运行时钟的速率是由最慢的阶段的延迟限制的**。每个时钟周期的最后，只有最慢的阶段会一直处于活动状态
+- **流水线过深**：不能无限增加流水线的阶段数，**因为此时流水线寄存器的延迟占比加大**。
+- **数据冒险**
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+![pipe_limit_1](/05-Arch-Sequential-and-Pipelined/pipe_limit_1.png){.mx-auto}
+
+</div>
+
+<div>
+
+![pipe_limit_2](/05-Arch-Sequential-and-Pipelined/pipe_limit_2.png){.mx-auto}
+
+</div>
+</div>
+
+```asm
+irmovq $50, %rax   ; 将立即数50移动到寄存器rax中
+addq %rax, %rbx    ; 将寄存器rax中的值与rbx中的值相加
+mrmovq 100(%rbx), %rdx  ; 从内存地址rbx+100读取值到寄存器rdx中
+```
+
+
+---
+
+# SEQ 与 SEQ+
+
+SEQ vs SEQ+
+
+- 在 SEQ 中，PC 计算发生在时钟周期结束的时候，根据当前时钟周期内计算出的信号值来计算 PC 寄存器的新值。<button @click="$nav.go(20)">💡</button>
+- 在 SEQ+ 中，我们需要在每个时钟周期都可以取出下一条指令的地址，所以更新 PC 阶段在一个时钟周期开始时执行，而不是结束时才执行。
+- **SEQ+ 没有硬件寄存器来存放程序计数器**。而是根据从前一条指令保存下来的一些状态信息动态地计算 PC。
+
+![seq+_pc](/05-Arch-Sequential-and-Pipelined/seq+_pc.png){.mx-auto.h-40}
+
+此处，小写的 `p` 前缀表示它们保存的是前一个周期中产生的控制信号。
+
+---
+
+# SEQ vs SEQ+
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+![seq_hardware](/05-Arch-Sequential-and-Pipelined/seq_hardware.png){.h-90.mx-auto}
+
+</div>
+
+<div>
+
+![seq+_hardware](/05-Arch-Sequential-and-Pipelined/seq+_hardware.png){.h-90.mx-auto}
+
+</div>
+</div>
+
+<button @click="$nav.go(43)">🔙</button> 
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# 弱化一些的 PIPE 结构
+
+PIPE-
+
+各个信号的命名：
+
+- 在命名系统中，大写的前缀 “D”、“E”、“M” 和 “W” 指的是 **流水线寄存器**，所以 `M_stat` 指的是流水线寄存器 `M` 的状态码字段。
+
+    可以理解为，对应阶段开始时就已经是正确的值了（且由于不回写的原则，所以该时钟周期内不会再改变，直到下一个时钟上升沿的到来）
+- 小写的前缀 `f`、`d`、`e`、`m` 和 `w` 指的是 **流水线阶段**，所以 `m_stat` 指的是在访存阶段 **中** 由控制逻辑块产生出的状态信号。
+
+    可以理解为，对应阶段中，完成相应运算时才会是正确的值
+
+
+
+
+</div>
+
+<div>
+
+![pipe-_hardware](/05-Arch-Sequential-and-Pipelined/pipe-_hardware.png){.h-120.mx-auto}
+
+</div>
+</div>
+
+---
+
+# SEQ+ vs PIPE-
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+![seq+_hardware](/05-Arch-Sequential-and-Pipelined/seq+_hardware.png){.h-90.mx-auto}
+
+</div>
+
+<div>
+
+![pipe-_hardware](/05-Arch-Sequential-and-Pipelined/pipe-_hardware.png){.h-90.mx-auto}
+
+</div>
+</div>
+
+<button @click="$nav.go(43)">🔙</button> 
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# 弱化一些的 PIPE 结构
+
+PIPE-
+
+
+- 等价于在 SEQ+ 中插入了流水线寄存器 **（他们都是即将由对应阶段进行处理）**{.text-sky-5}
+  - F：Fetch，取指阶段
+  - D：Decode，译码阶段
+  - E：Execute，执行阶段
+  - M：Memory，访存阶段
+  - W：Write back，写回阶段
+- 同时，有个新模块 `selectA` 来选择 `valA` 的来源
+  - `valP`：`call` `jXX`（后面讲，可以想想为啥，提示：控制冒险）
+  - `d_valA`：其他未转发的情况（后面讲）<button @click="$nav.go(41)">🔙</button>
+
+</div>
+
+<div>
+
+![pipe-_hardware](/05-Arch-Sequential-and-Pipelined/pipe-_hardware.png){.h-120.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPE- 分支预测
+
+PIPE- branch prediction
+
+**分支预测**：猜测分支方向并根据猜测开始取指的技术。
+
+对于 `jXX` 指令，有两种情况：
+
+- 分支不执行：下一条 PC 是 `valP`
+- 分支执行：下一条 PC 是 `valC`
+
+由于我们现在是流水线，我们需要每个时钟周期都能给出一个指令地址用于取址，所以我们采用分支预测：
+
+最简单的策略：总是预测选择了条件分支，因而预测 PC 的新值为 `valC`。
+
+对于 `ret` 指令，我们等待它通过写回 `W` 阶段（从而可以从 `M` 中得到之前压栈的返回值并更新 `PC`）。
+
+> 同条件转移不同，`ret` 可能的返回值几乎是无限的，因为返回地址是位于栈顶的字，其内容可以是任意的。
+
+---
+
+# 流水线冒险
+
+hazards
+
+冒险分为两类：
+
+1. **数据冒险 (Data Hazard)**：下一条指令需要使用当前指令计算的结果。
+2. **控制冒险 (Control Hazard)**：指令需要确定下一条指令的位置，例如跳转、调用或返回指令。
+
+<!-- 提醒大家仔细听 -->
+
+---
+
+# 数据冒险
+
+data hazard
+
+<div grid="~ cols-2 gap-8">
+<div>
+
+数据冒险是相对容易理解的。
+
+在右图代码中，`%rax` 的值需要在第 6 个周期结束时才能完成写回，但是在 第 6 个周期内，正处于译码阶段的 `addq` 指令就需要使用 `%rax` 的值了。这就产生了数据冒险。
+
+类似可推得，如果一条指令的操作数被它前面 3 条指令中的任意一条改变的话，都会出现数据冒险。
+
+我们需要满足：当后来的需要某一寄存器的指令处于译码 D 阶段时，该寄存器的值必须已经更新完毕（即已经 **完成** 写回 W 阶段）。
+
+<div class="text-sm">
+
+$$
+5(完成 W) - 1(开始 D，即完成 F) - 1(错开一条指令) = 3
+$$
+
+</div>
+
+
+</div>
+
+<div>
+
+
+
+![data_hazard](/05-Arch-Sequential-and-Pipelined/data_hazard.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 数据冒险的解决：暂停
+
+data hazard resolution: stall
+
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+
+**暂停**：暂停时，处理器会停止流水线中一条或多条指令，直到冒险条件不再满足。
+
+<div class="text-sm">
+
+> 让一条指令停顿在译码阶段，直到产生它的源操作数的指令通过了写回阶段，这样我们的处理器就能避免数据冒险。（即，下一个时钟周期开始时，此指令开始真正译码，此时源操作数已经更新完毕）
+
+暂停技术就是让一组指令阻塞在它们所处的阶段，而允许其他指令继续通过流水线（如右图 `irmovq` 指令）。
+
+每次要把一条指令阻塞在 **译码阶段**，就在 **执行阶段**（下一个阶段）插入一个气泡。
+
+气泡就像一个自动产生的 `nop` 指令，**它不会改变寄存器、内存、条件码或程序状态。**{.text-sky-5}
+
+</div>
+
+
+</div>
+
+<div>
+
+![stall](/05-Arch-Sequential-and-Pipelined/stall.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 暂停 vs 气泡
+
+stall vs bubble
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+- 正常：寄存器的状态和输出被设置成输入的值
+- 暂停：状态保持为先前的值不变
+- 气泡：会用 `nop` 操作的状态覆盖当前状态
+
+所以，在上页图中，我们说：
+- 给执行阶段插入了气泡
+- 对译码阶段执行了暂停
+
+<button @click="$nav.go(45)">🔙</button>
+
+</div>
+
+<div>
+
+![stall_vs_bubble](/05-Arch-Sequential-and-Pipelined/stall_vs_bubble.png){.mx-auto}
+
 </div>
 </div>
 
 
 ---
 
-# Fn
+# 数据冒险的解决：转发
+
+data hazard resolution: forwarding
+
+![data_hazard_2](/05-Arch-Sequential-and-Pipelined/data_hazard_2.png){.mx-auto.h-80}
+
+<div class="text-sm">
+
+
+实际上，在这里，所需要的真实  `%rax` 值，早在 4E 快结束时就已经计算出来了。而我们需要用到它的是 5E 的开始。
+
+回忆：大写的寄存器是在对应阶段开始时就已经是正确的值。
+
+</div>
+
+---
+
+# 数据冒险的解决：转发
+
+data hazard resolution: forwarding
+
+**转发**：将结果值直接从一个流水线阶段传到较早阶段的技术。
+
+这个过程可以发生在许多阶段（下图中，要到 6E 寄存器才定下来，所以只要在时钟上升沿来之前，都来得及）。
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+![forward_1](/05-Arch-Sequential-and-Pipelined/forward_1.png){.mx-auto.h-80}
+
+</div>
+
+<div>
+
+![forward_2](/05-Arch-Sequential-and-Pipelined/forward_2.png){.mx-auto.h-80}
+
+</div>
+</div>
+
+---
+
+# 特殊的数据冒险：加载 / 使用冒险
+
+data hazard: load / use hazard
+
+- 如果在先前指令的 E 执行阶段（其内靠后时）就已经可以得到正确值，那么由于后面的指令至少落后 1 个阶段，我们总可以在后面指令的 E 寄存器最终确定之前，将正确值转发解决问题。
+- 如果在先前指令的 M 访存阶段（其内靠后时）才能得到正确值，且后面指令紧跟其后，那么当我们实际得到正确值时，必然赶不上后面指令的 E 寄存器最终确定，所以我们必须暂停流水线。
+- 所以，加载 / 使用冒险只发生在 `mrmovq` 后立即使用对应寄存器的情况。
+
+<div class="text-sm text-gray-5">
+
+书上老说什么把值送回过去，我觉得第一次读真难明白吧。
+
+</div>
+
+---
+
+# 特殊的数据冒险：加载 / 使用冒险
+
+data hazard: load / use hazard
+
+![load_use_hazard](/05-Arch-Sequential-and-Pipelined/load_use_hazard.png){.mx-auto.h-100}
+
+---
+
+# 加载 / 使用冒险解决方案：暂停 + 转发
+
+load / use hazard solution
 
 <div grid="~ cols-3 gap-12">
 <div>
 
-### Jmp Fn
-![Jmp Fn](/04-Arch-ISA-and-Logic/fn_jmp.png){.h-90}
+依旧是：
+
+- 译码阶段中的指令暂停 1 个周期
+- 执行阶段中插入 1 个气泡
+
+此时，`m_valM` 的值已经更新完毕，所以可以转发到 `d_valA`。
+
+`m_valM`：在 M 阶段内，取出的内存值
+
+`d_valA`：在 D 阶段内，计算得到的即将设置为 `E_valA` 的值
+
+</div>
+
+<div col-span-2>
+
+![load_use_hazard_solution](/05-Arch-Sequential-and-Pipelined/load_use_hazard_solution.png){.mx-auto.h-100}
+
+</div>
+</div>
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# PIPE 最终结构
+
+PIPE final structure
+
+把各个转发逻辑都画出来，就得到了最终的结构。
+
+注意：
+
+- `Sel + Fwd A`：是 PIPE- 中标号为 `Select A` 的块的功能与转发逻辑的结合。<button @click="$nav.go(30)">💡</button>
+- `Fwd B`
+
+<button @click="$nav.go(44)">🔙</button>
 
 </div>
 
 <div>
 
-### Mov Fn
-![Mov Fn](/04-Arch-ISA-and-Logic/fn_mov.png){.h-90}
+![pipe_hardware](/05-Arch-Sequential-and-Pipelined/pipe_hardware.png){.mx-auto.h-120}
 
 </div>
+</div>
+
+---
+
+# PIPE- vs PIPE
+
+<div grid="~ cols-2 gap-12">
 <div>
 
-### OP Fn
-![OP Fn](/04-Arch-ISA-and-Logic/fn_op.png){.h-90}
+![pipe-_hardware](/05-Arch-Sequential-and-Pipelined/pipe-_hardware.png){.h-90.mx-auto}
+
+</div>
+
+<div>
+
+![pipe_hardware](/05-Arch-Sequential-and-Pipelined/pipe_hardware.png){.h-90.mx-auto}
 
 </div>
 </div>
 
+<button @click="$nav.go(43)">🔙</button> 
 
 ---
-layout: image-right
-image: /04-Arch-ISA-and-Logic/register.png
+
+# 结构之间的差异
+
+differences between structures
+
+<div grid="~ cols-2 gap-4" text-sm>
+<div>
+
+### SEQ
+
+- 完全的分阶段，且顺序执行
+- 没有流水线寄存器
+- 没有转发逻辑
+
+</div>
+
+<div>
+
+### SEQ+
+
+- 把计算新 PC 计算放到了最开始
+- 目的：为了能够划分流水线做准备，当前指令到 D 阶段时，应当能开始下一条指令的 F 阶段
+- 依旧是没有转发逻辑、且顺序执行
+
+<button @click="$nav.go(27)">💡 结构差异图</button> 
+
+</div>
+
+<div>
+
+### PIPE-
+
+- 在 SEQ+ 的基础上，增加了流水线寄存器
+- 增加了一些转发逻辑（但不是所有）
+- 新的转发源：`M_valA` `W_valW` `W_valE`（流水线寄存器们）
+- 转发目的地：`d_valA` `d_valB`
+
+<button @click="$nav.go(29)">💡 结构差异图</button> 
+
+</div>
+
+<div>
+
+### PIPE
+
+- 在 PIPE- 的基础上，完善了转发逻辑，可以转发更多的计算结果（小写开头的，而不是只有大写开头的流水线寄存器）
+- 新的转发源：`e_valE` `m_valM`（中间计算结果们）
+
+<button @click="$nav.go(42)">💡 结构差异图</button> 
+
+</div>
+
+</div>
+
 ---
 
-# 寄存器
+# 控制冒险
 
-Register
+control hazard
 
-```markdown{all|1-4|5-6|7-8|9-15|16|all|8,7,3,2|all|4,6,13-16}
-* 0x0 %rax 
-* 0x1 %rcx
-* 0x2 %rdx
-* 0x3 %rbx
-* 0x4 %rsp
-* 0x5 %rbp
-* 0x6 %rsi
-* 0x7 %rdi
-* 0x8 %r8
-* 0x9 %r9
-* 0xA %r10
-* 0xB %r11
-* 0xC %r12
-* 0xD %r13
-* 0xE %r14
-* 0xF F / No Register
+**控制冒险**：当处理器无法根据处于取指阶段的当前指令来确定下一条指令的地址时，就会产生控制冒险。
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+
+发生条件：`RET` `JXX`
+
+`RET` 指令需要弹栈（访存）才能得到下一条指令的地址。
+
+`JXX` 指令需要根据条件码来确定下一条指令的地址。
+
+- `Cnd ← Cond(CC, ifun)`
+- `Cnd ? valC : valP`
+
+
+
+</div>
+
+<div>
+
+```hcl
+# 指令应从哪个地址获取
+word f_pc = [
+  # 分支预测错误时，从增量的 PC 取指令
+  # 传递路径：D_valP -> E_valA -> M_valA
+  # 条件跳转指令且条件不满足时
+  M_icode == IJXX && !M_Cnd : M_valA;
+  # RET 指令终于执行到回写阶段时（即过了访存阶段）
+  W_icode == IRET : W_valM;
+  # 默认情况下，使用预测的 PC 值
+  1 : F_predPC;
+];
 ```
 
-<div class="text-[0.7rem]" flex="~ gap-4">
-<div shrink-0>
+<button @click="$nav.go(41)">💡PIPELINE 电路图</button>
 
-* a,c,d,b + x <span text-gray-400># AcFun 倒（D）了，然后 Bilibili 兴起了</span>
-* 栈指针（包括栈顶%rsp和栈底%rbp）
-* 前两个参数指针
-* 按序的 %r8 ~ %r14
+注意，这里用到的都是流水线寄存器，而没有中间计算结果（小写前缀）。
 
 </div>
-
-![acdb](/04-Arch-ISA-and-Logic/acdb.jpg)
-
 </div>
 
 
 ---
 
-# 汇编代码翻译
+# 控制冒险：RET
 
-translate assembly code to machine code
+control hazard: RET
 
-以下习题节选自书 P248，练习题 4.1 / 4.2
+![control_hazard_ret](/05-Arch-Sequential-and-Pipelined/control_hazard_ret.png){.mx-auto.h-45}
 
-<div v-click-hide>
+涉及取指 F 阶段的不能转发中间结果 `m_valM`，必须等到流水线寄存器 `W_valM` 更新完毕！
 
-### Quiz
+为什么：取址阶段没有相关的硬件电路处理中间结果的转发！必须是流水线寄存器同步。
 
-|     |     |
-| --- | --- |
-| 0x200 | a0 6f 80 0c 02 00 00 00 00 00 00 00 30 f3 0a 00 00 00 00 00 00 00 90 |
-| loop | rmmovq %rcx, -3(%rbx) |
+所以需要插入 3 个气泡：
 
-对于第一条翻译为汇编代码，第二条翻译为机器码
+$$
+4(\text{RET } 完成 M) - 0(开始 F) - 1(错开一条指令) = 3
+$$
 
-<br/>
+为什么是气泡：<button @click="$nav.go(35)">💡暂停 vs 气泡</button> 暂停保留状态，气泡清空状态。
 
-</div>
+---
 
-<div v-after>
+# 控制冒险：JXX
 
-### Step 1
-|     |     |
-| --- | --- |
-| 0x200 | <kbd>a0</kbd> <kbd>6f</kbd> \| <kbd>80</kbd> <kbd>0c 02 00 00 00 00 00 00</kbd> \| <kbd>00</kbd> \| <kbd>30</kbd> <kbd>f</kbd><kbd>3</kbd> <kbd>0a 00 00 00 00 00 00 00</kbd> \| <kbd>90</kbd>|
-| loop | rmmovq, rcx, rbx, -3 |
+control hazard: JXX
 
-
-</div>
-
-<br>
-
-<div v-click>
-
-### Step 2
-
-<div  grid="~ cols-2 gap-4">
+<div grid="~ cols-2 gap-12">
 <div>
 
-```bash
-0x200:
-  pushq %rbp
-  call 0x20c
-  halt
-0x20c:
-  irmovq $10 %rbx
-  ret
+- 分支逻辑发现不应该选择分支之前（到达执行 E 阶段），已经取出了两条指令，它们不应该继续执行下去了。
+- 这两条指令都没有导致程序员可见的状态发生改变（没到到执行 E 阶段）。
+
+</div>
+
+<div>
+
+
+
+![control_hazard_jxx](/05-Arch-Sequential-and-Pipelined/control_hazard_jxx.png){.mx-auto.h-40}
+
+</div>
+</div>
+<div grid="~ cols-2 gap-12" text-sm>
+<div>
+
+
+```hcl
+# 是否需要注入气泡至流水线寄存器 D
+bool D_bubble =
+  # 错误预测的分支 
+  (E_icode == IJXX && !e_Cnd) || 
+  # 在取指阶段暂停，同时 ret 指令通过流水线
+  # 但不存在加载/使用冒险的条件（此时使用暂停）
+  !(E_icode in { IMRMOVQ, IPOPQ } &&
+   E_dstM in { d_srcA, d_srcB }) &&
+  # IRET 指令在 D、E、M 任何一个阶段
+  IRET in { D_icode, E_icode, M_icode };
 ```
 
 </div>
+
 <div>
 
-<kbd>40</kbd> <kbd>1</kbd><kbd>3</kbd> <kbd>ff ff ff fd</kbd>
+```hcl
+# 是否需要注入气泡至流水线寄存器 E
+bool E_bubble =
+  # 错误预测的分支
+  (E_icode == IJXX && !e_Cnd) ||
+  # 加载/使用冒险的条件
+  E_icode in { IMRMOVQ, IPOPQ } && 
+  E_dstM in { d_srcA, d_srcB };
+```
 
 </div>
 </div>
-</div>
-
-<style>
-.slidev-vclick-hidden {
-  @apply hidden;
-}
-</style>
-
-
-
-<!--
-地址、立即数都是小端法
--->
 
 ---
 
-# Y86-64 vs x86-64, CISC vs RISC
+# PIPELINE 的各阶段实现：取指阶段
 
-Complex Instruction Set Computer & Reduced Instruction Set Computer
-
+pipeline hcl: fetch stage
 
 <div grid="~ cols-2 gap-4">
-  <div>
-
-* Y86-64 是 X86-64 的子集
-* X86-64 更复杂，但是更强大
-* Y86-64 更简单，复杂指令由简单指令组合而成
-  
-如 Y86-64 的算数指令（`OPq`）只能操作寄存器，而 X86-64 可以操作内存
-
-> 所以 Y86-64 需要额外的指令（`mrmovq`、`rmmovq`）来先加载内存中的值到寄存器，再进行运算
-
-  </div>
 <div>
 
-* CISC：复杂指令集计算机
-* RISC：精简指令集计算机
-* 设计趋势是融合的
-  
-![CISC v.s. RISC](/04-Arch-ISA-and-Logic/cisc_vs_risc.jpg){.w-70}
-
+```hcl
+# 指令应从哪个地址获取
+word f_pc = [
+  # 分支预测错误时，从增量的 PC 取指令
+  # 传递路径：D_valP -> E_valA -> M_valA
+  # 条件跳转指令且条件不满足时
+  M_icode == IJXX && !M_Cnd : M_valA;
+  # RET 指令终于执行到回写阶段时（即过了访存阶段）
+  W_icode == IRET : W_valM;
+  # 默认情况下，使用预测的 PC 值
+  1 : F_predPC;
+];
+# 取指令的 icode
+word f_icode = [
+  imem_error : INOP;  # 指令内存错误，取 NOP
+  1 : imem_icode;     # 否则，取内存中的 icode
+];
+# 取指令的 ifun
+word f_ifun = [
+  imem_error : FNONE; # 指令内存错误，取 NONE
+  1 : imem_ifun;      # 否则，取内存中的 ifun
+];
+```
 </div>
-</div>
-
----
-
-# Y86-64 状态
-
-status
-
-| 值 | 名字 | 含义 | 全称 |
-|----|------|------|------|
-| 1  | `AOK`  | 正常操作 | All OK |
-| 2  | `HLT`  | 遇到器执行`halt`指令遇到非法地址 | Halt |
-| 3  | `ADR`  | 遇到非法地址，如向非法地址读/写 | Address Error |
-| 4  | `INS`  | 遇到非法指令，如遇到一个 `ff` | Invalid Instruction |
-
-除非状态值是 `AOK`，否则程序会停止执行。
-
-
-
----
-layout: image-right
-image: /04-Arch-ISA-and-Logic/Y86_stack.png
----
-
-# Y86-64 栈
-
-stack
-
-`Pushq rA F / 0xA0 rA F`
-
-压栈指令
-- 将 `%rsp` 减去8
-- 将字从 `rA` 存储到 `%rsp` 的内存中
-
-<br>
-
-***
-
-`Popq rA F / 0xB0 rA F`
-
-弹栈指令
-- 将字从 `%rsp` 的内存中取出
-- 将 `%rsp` 加上8
-- 将字存储到 `rA` 中
-
-<!-- 
-
-
-<div text-sm>
-
-根据书 P334 4.7、4.8，如果压栈 / 弹栈的时候的寄存器恰为 `%rsp`，则不会改变 `%rsp` 的值。
-
-</div>
-
- -->
-
-
----
-
-# Y86-64 程序调用
-
-`call` & `ret`
-
-`Call Dest / 0x80 Dest`
-
-调用指令
-- 将下一条指令的地址 `pushq` 到栈上（`%rsp` 减 8、地址存入栈中）
-- 从目标处开始执行指令
-
-<br/>
-
-***
-
-`Ret / 0x90`
-
-返回指令
-- 从栈上 `popq` 出地址，用作下一条指令的地址（`%rsp` 加 8、地址从栈中取出，存入 `%rip`）
-
-
-
----
-
-# Y86-64 终止与对齐
-
-`Halt / 0x00`
-
-终止指令
-- 停止执行
-- 停止模拟器
-- 在遇到初始化为 0 的内存地址时，也会终止
-- 记忆：没有事情做了 ➡️ 停止
-
-<br/>
-
-`Nop / 0x10`
-
-空操作
-- 什么都不做（但是 PC <span text-sm> Program Counter </span> + 1），可以用于对齐字节
-- 记忆：扣 1 真的没有用
-
----
-
-# 逻辑设计和硬件控制语言 HCL
-
-hardware control language
-
-* 计算机底层是 0（低电压） 和 1（高电压）的世界
-* HCL（硬件 **控制** 语言）是一种硬件 **描述** 语言（HDL），用于描述硬件的逻辑电路
-* HCL 是 HDL 的子集
-
-<br>
-
-<div grid="~ cols-3 gap-4"  mt-2>
 
 <div>
 
-#### 与门 And
+![pipeline_fetch_stage](/05-Arch-Sequential-and-Pipelined/pipeline_fetch_stage.png){.mx-auto}
 
-![And](/04-Arch-ISA-and-Logic/and.png){.h-30}
+</div>
+</div>
 
-```c
-out = a&&b
+---
+
+# PIPELINE 的各阶段实现：取指阶段
+
+pipeline hcl: fetch stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 指令是否有效
+bool instr_valid = f_icode in {
+  INOP, IHALT, IRRMOVQ, IIRMOVQ, IRMMOVQ, IMRMOVQ,
+  IOPQ, IJXX, ICALL, IRET, IPUSHQ, IPOPQ
+};
+# 获取指令的状态码
+word f_stat = [
+  imem_error : SADR;   # 内存错误
+  !instr_valid : SINS; # 无效指令
+  f_icode == IHALT : SHLT; # HALT 指令
+  1 : SAOK;            # 默认情况，状态正常
+];
 ```
 
 </div>
 
 <div>
 
-#### 或门 Or
-
-![Or](/04-Arch-ISA-and-Logic/or.png){.h-30}
-
-```c
-out = a||b
-```
+![pipeline_fetch_stage](/05-Arch-Sequential-and-Pipelined/pipeline_fetch_stage.png){.mx-auto}
 
 </div>
-
-<div>
-
-#### 非门 Not
-
-![Not](/04-Arch-ISA-and-Logic/not.png){.h-30}
-
-```c
-out = !a
-```
-
 </div>
-
-</div>
-
-记忆：方形的更严格→与；圆形的更宽松→或
-
-
 
 ---
 
-# 组合电路 / 高级逻辑设计
+# PIPELINE 的各阶段实现：取指阶段
 
-中杯：bit level / bool
+pipeline hcl: fetch stage
 
-<div grid="~ cols-2 gap-12"  mt-2>
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 指令是否需要寄存器 ID 字节
+# 单字节指令 `HALT` `NOP` `RET`；不需要寄存器 `JXX` `CALL`
+bool need_regids = f_icode in {
+  IRRMOVQ, IOPQ, IPUSHQ, IPOPQ,
+  IIRMOVQ, IRMMOVQ, IMRMOVQ
+};
+# 指令是否需要常量值
+# 作为值；作为 rB 偏移；作为地址
+bool need_valC = f_icode in {
+  IIRMOVQ, IRMMOVQ, IMRMOVQ, IJXX, ICALL
+};
+# 预测下一个 PC 值
+word f_predPC = [
+  # 跳转或调用指令，取 f_valC
+  f_icode in { IJXX, ICALL } : f_valC;
+  # 否则，取 f_valP
+  1 : f_valP;
+];
+```
+</div>
 
 <div>
 
-```c
-bool eq = (a && b) || (!a && !b);
-```
-
-![bit_eq](/04-Arch-ISA-and-Logic/bit_eq.png){.h-50.mx-auto}
-
-- 组合电路是 `响应式` 的：在输入改变时，输出经过一个很短的时间会立即改变
-- 没有短路求值特性：`a && b` 不会在 `a` 为 `false` 时就不计算 `b`
+![pipeline_fetch_stage](/05-Arch-Sequential-and-Pipelined/pipeline_fetch_stage.png){.mx-auto}
 
 </div>
-
-<div>
-
-```c
-bool out = (s && a) || (!s && b);
-```
-
-![bit_mux](/04-Arch-ISA-and-Logic/bit_mux.png){.h-50.mx-auto}
-
-- Mux：Multiplexer / 多路复用器，用一个 `s` 信号来选择 `a` 或 `b`
-
 </div>
-
-</div>
-
-
-
 
 ---
 
-# 组合电路 / 高级逻辑设计
+# PIPELINE 的各阶段实现：译码阶段
 
-大杯：word level / word
+pipeline hcl: decode stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 决定 d_valA 的来源
+word d_srcA = [
+  # 一般情况，使用 rA
+  D_icode in { IRRMOVQ, IRMMOVQ, IOPQ, IPUSHQ } : D_rA;
+  # 此时，valB 也是栈指针
+  # 但是同时需要计算新值（valB 执行阶段计算）、使用旧值访存（valA）
+  D_icode in { IPOPQ, IRET } : RRSP;
+  1 : RNONE; # 不需要 valA
+];
+# 决定 d_valB 的来源
+word d_srcB = [
+  # 一般情况，使用 rB
+  D_icode in { IOPQ, IRMMOVQ, IMRMOVQ } : D_rB;
+  # 涉及栈指针，需要计算新的栈指针值
+  D_icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+  1 : RNONE; # 不需要 valB
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_decode_stage](/05-Arch-Sequential-and-Pipelined/pipeline_decode_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：译码阶段
+
+pipeline hcl: decode stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 决定 E 执行阶段计算结果的写入寄存器
+word d_dstE = [
+  # 一般情况，写入 rB，注意 OPQ 指令的 rB 是目的寄存器
+  D_icode in { IRRMOVQ, IIRMOVQ, IOPQ} : D_rB;
+  # 涉及栈指针，更新 +8/-8 后的栈指针
+  D_icode in { IPUSHQ, IPOPQ, ICALL, IRET } : RRSP;
+  1 : RNONE; # 不写入 valE 到任何寄存器
+];
+# 决定 M 访存阶段读出结果的写入寄存器
+word d_dstM = [
+  # 这两个情况需要更新 valM 到 rA
+  D_icode in { IMRMOVQ, IPOPQ } : D_rA;
+  1 : RNONE; # 不写入 valM 到任何寄存器
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_decode_stage](/05-Arch-Sequential-and-Pipelined/pipeline_decode_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：译码阶段
+
+pipeline hcl: decode stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 决定 d 译码阶段的 valA 的最终结果，即将存入 E_valA
+word d_valA = [
+  # 保存递增的 PC
+  # 对于 CALL，d_valA -> E_valA -> M_valA -> 写入内存
+  # 对于 JXX，d_valA -> E_valA -> M_valA
+  # 跳转条件不满足（预测失败）时，同步到 f_pc
+  D_icode in { ICALL, IJXX } : D_valP; # 保存递增的 PC
+  d_srcA == e_dstE : e_valE; # 前递 E 阶段计算结果
+  d_srcA == M_dstM : m_valM; # 前递 M 阶段读出结果
+  d_srcA == M_dstE : M_valE; # 前递 M 流水线寄存器最新值
+  d_srcA == W_dstM : W_valM; # 前递 W 流水线寄存器最新值
+  d_srcA == W_dstE : W_valE; # 前递 W 流水线寄存器最新值
+  1 : d_rvalA; # 使用从寄存器文件读取的值，r 代表 read
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_decode_stage](/05-Arch-Sequential-and-Pipelined/pipeline_decode_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：译码阶段
+
+pipeline hcl: decode stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 决定 d 译码阶段的 valB 的最终结果，即将存入 E_valB
+word d_valB = [
+  d_srcB == e_dstE : e_valE; # 前递 E 阶段计算结果
+  d_srcB == M_dstM : m_valM; # 前递 M 阶段读出结果
+  d_srcB == M_dstE : M_valE; # 前递 M 流水线寄存器最新值
+  d_srcB == W_dstM : W_valM; # 前递 W 流水线寄存器最新值
+  d_srcB == W_dstE : W_valE; # 前递 W 流水线寄存器最新值
+  1 : d_rvalB; # 使用从寄存器文件读取的值，r 代表 read
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_decode_stage](/05-Arch-Sequential-and-Pipelined/pipeline_decode_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：执行阶段
+
+pipeline hcl: execute stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 选择 ALU 的输入 A
+word aluA = [
+  # RRMOVQ：valA + 0; OPQ：valB OP valA
+  E_icode in { IRRMOVQ, IOPQ } : E_valA;
+  # IRMOVQ：valC + 0; RMMOVQ/MRMOVQ：valC + valB
+  E_icode in { IIRMOVQ, IRMMOVQ, IMRMOVQ } : E_valC;
+  # CALL/PUSH：-8; RET/POP：8
+  E_icode in { ICALL, IPUSHQ } : -8;
+  E_icode in { IRET, IPOPQ } : 8;
+  # 其他指令不需要 ALU 的输入 A
+];
+# 选择 ALU 的输入 B
+word aluB = [
+  # 涉及栈时，有 E_valB = RRSP，用于计算新值
+  E_icode in { IRMMOVQ, IMRMOVQ, IOPQ, ICALL,
+    IPUSHQ, IRET, IPOPQ } : E_valB;
+  # 注意 IRMOVQ 的寄存器字节是 rA=F，即存到 rB
+  E_icode in { IRRMOVQ, IIRMOVQ } : 0;
+  # 其他指令不需要 ALU 的输入 B
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_execute_stage](/05-Arch-Sequential-and-Pipelined/pipeline_execute_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：执行阶段
+
+pipeline hcl: execute stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 设置 ALU 功能
+word alufun = [
+  # 如果指令是 IOPQ，则选择 E_ifun
+  E_icode == IOPQ : E_ifun;
+  # 默认选择 ALUADD
+  1 : ALUADD;
+];
+# 是否更新条件码
+# 仅在指令为 IOPQ 时更新条件码
+# 且只在正常操作期间状态改变
+bool set_cc = E_icode == IOPQ &&
+  !m_stat in { SADR, SINS, SHLT } &&
+  !W_stat in { SADR, SINS, SHLT };
+```
+
+</div>
+
+<div>
+
+![pipeline_execute_stage](/05-Arch-Sequential-and-Pipelined/pipeline_execute_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：执行阶段
+
+pipeline hcl: execute stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+
+```hcl
+# 在执行阶段仅传递 valA 的去向
+# E_valA -> e_valA -> M_valA
+word e_valA = E_valA;
+# CMOVQ 指令，与 RRMOVQ 共用 icode
+# 当条件不满足时，不写入计算值到任何寄存器
+word e_dstE = [
+  E_icode == IRRMOVQ && !e_Cnd : RNONE
+  1 : E_dstE;    # 否则选择 E_dstE
+];
+```
+
+</div>
+
+<div>
+
+![pipeline_execute_stage](/05-Arch-Sequential-and-Pipelined/pipeline_execute_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：访存阶段
+
+pipeline hcl: memory stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 选择访存地址
+word mem_addr = [
+  # 需要计算阶段计算的值
+  # RMMOVQ/MRMOVQ：valE = valC + valB，这里 valA/C “统一”
+  # CALL/PUSH：valE = valB(RRSP) + 8
+  M_icode in { IRMMOVQ, IPUSHQ, ICALL, IMRMOVQ } : M_valE;
+  # 需要计算阶段不修改传递过来的值，即栈指针旧值
+  # d_valA(RRSP) -> E_valA -> M_valA
+  M_icode in { IPOPQ, IRET } : M_valA;
+  # 其他指令不需要访存
+];
+# 是否读取内存
+bool mem_read = M_icode in { IMRMOVQ, IPOPQ, IRET };
+# 是否写入内存
+bool mem_write = M_icode in { IRMMOVQ, IPUSHQ, ICALL };
+```
+
+</div>
+
+<div>
+
+![pipeline_memory_stage](/05-Arch-Sequential-and-Pipelined/pipeline_memory_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：访存阶段
+
+pipeline hcl: memory stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+```hcl
+# 更新状态
+word m_stat = [
+  dmem_error : SADR; # 数据内存错误
+  1 : M_stat; # 默认状态
+];
+```
+
+
+</div>
+
+<div>
+
+![pipeline_memory_stage](/05-Arch-Sequential-and-Pipelined/pipeline_memory_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# PIPELINE 的各阶段实现：写回阶段
+
+pipeline hcl: writeback stage
+
+<div grid="~ cols-2 gap-4">
+<div>
+
+
+```hcl
+# W 阶段几乎啥都不干，单纯传递
+# 设置 E 端口寄存器 ID
+word w_dstE = W_dstE; # E 端口寄存器 ID
+# 设置 E 端口值
+word w_valE = W_valE; # E 端口值
+# 设置 M 端口寄存器 ID
+word w_dstM = W_dstM; # M 端口寄存器 ID
+# 设置 M 端口值
+word w_valM = W_valM; # M 端口值
+# 更新处理器状态
+word Stat = [
+  # SBUB 全称 State Bubble，即气泡状态
+  W_stat == SBUB : SAOK;
+  1 : W_stat; # 默认状态
+];
+```
+
+
+</div>
+
+<div>
+
+![pipeline_memory_stage](/05-Arch-Sequential-and-Pipelined/pipeline_memory_stage.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 异常处理（气泡 / 暂停）：取指阶段
+
+bubble / stall in fetch stage
+
+注意：bubble 和 stall 不能同时为真。
+
+```hcl
+# 是否向流水线寄存器 F 注入气泡？
+bool F_bubble = 0; # 恒为假
+# 是否暂停流水线寄存器 F？
+bool F_stall = 
+  # 加载/使用数据冒险时，要暂停 1 个周期的译码，进而也需要暂停 1 个周期的取指
+  E_icode in { IMRMOVQ, IPOPQ } && E_dstM in { d_srcA, d_srcB } ||
+  # 当 ret 指令通过流水线时暂停取指，一直等到 ret 指令得到 W_valM
+  IRET in { D_icode, E_icode, M_icode };
+```
+
+<div grid="~ cols-2 gap-12" relative>
+<div>
+
+![load_use_hazard_solution_stall](/05-Arch-Sequential-and-Pipelined/load_use_hazard_solution_stall.png){.mx-auto}
+
+</div>
+
+<div>
+
+![control_hazard_ret_stall](/05-Arch-Sequential-and-Pipelined/control_hazard_ret_stall.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 异常处理（气泡 / 暂停）：译码阶段
+
+bubble / stall in decode stage
+
+注意：bubble 和 stall 不能同时为真。
+
+
+```hcl
+# 是否暂停流水线寄存器 D？
+# 加载/使用数据冒险
+bool D_stall = E_icode in { IMRMOVQ, IPOPQ } && E_dstM in { d_srcA, d_srcB };
+# 是否向流水线寄存器 D 注入气泡？
+bool D_bubble = 
+  # 分支预测错误
+  (E_icode == IJXX && !e_Cnd) ||
+  # 当 ret 指令通过流水线时暂停 3 次译码阶段，但要求不满足读取/使用数据冒险的条件
+  !(E_icode in { IMRMOVQ, IPOPQ } && E_dstM in { d_srcA, d_srcB }) && IRET in { D_icode, E_icode, M_icode };
+```
 
 <div grid="~ cols-2 gap-12">
 <div>
 
+![control_hazard_jxx_bubble_1](/05-Arch-Sequential-and-Pipelined/control_hazard_jxx_bubble_1.png){.mx-auto}
+
+</div>
+
+<div>
+
+![control_hazard_ret_bubble](/05-Arch-Sequential-and-Pipelined/control_hazard_ret_bubble.png){.mx-auto} 
+
+</div>
+</div>
+
+---
+
+# 异常处理（气泡 / 暂停）：执行阶段
+
+bubble / stall in execute stage
+
+注意：bubble 和 stall 不能同时为真。
 
 
-
-```c
-bool Eq = (A == B)
-
+```hcl
+# 是否需要阻塞流水线寄存器 E？
+bool E_stall = 0;
+# 是否向流水线寄存器 E 注入气泡？
+bool E_bubble = 
+  # 错误预测的分支
+  (E_icode == IJXX && !e_Cnd) || 
+  # 负载/使用冒险条件
+  (E_icode in { IMRMOVQ, IPOPQ } && E_dstM in { d_srcA, d_srcB });
 ```
-
-![word_eq](/04-Arch-ISA-and-Logic/word_eq.png){.h-60}
-
-</div>
-
-<div>
-
-```c
-int Out = [
-  s : A; # select: expr
-  1 : B;
-];
-
-```
-
-![word_mux](/04-Arch-ISA-and-Logic/word_mux.png){.h-60}
-
-</div>
-</div>
-
-
----
-
-# 组合电路 / 高级逻辑设计
-
-超大杯：相信你已经学会了基本的 ~~红石~~ 逻辑门电路，那就试试 ~~纯红石~~ 神经网络 [^1] 吧！
-
-![组合电路](/04-Arch-ISA-and-Logic/redstone.png){.h-80}
-
-[^1]: [【Minecraft】世界首个纯红石神经网络！真正的红石人工智能(中文/English)(4K)/ Bilibili](https://www.bilibili.com/video/BV1yv4y1u7ZX/)
-
-
-
----
-
-# 组合电路 / 集合关系
-
-是的，我们居然还能在这里温习《离散数学基础》
-
-```c
-int Out4 = [
-  bool s1 = code in {2, 3}; # 10, 11
-  bool s2 = code in {1, 3}; # 01, 11
-];
-
-```
-
-![sets](/04-Arch-ISA-and-Logic/sets.png){.h-40}
-
-<!-- 我们可以用集合关系来表示电路的逻辑 -->
-
-
----
-
-# 组合电路 / 算数逻辑单元 ALU
-Arithmetic Logic Unit
-
-![ALU](/04-Arch-ISA-and-Logic/alu.png)
-
-<div grid="~ cols-2 gap-4"  mt-2>
-
-<div>
-
-- 组合逻辑
-- 持续响应输入
-- 控制信号选择计算的功能
-</div>
-<div>
-
-- 对应于 Y86-64 中的 4 个算术 / 逻辑操作
-- 计算条件码的值
-- 注意 `Sub` 是被减的数在后面，即输入 B 减去输入 A，等于 `subq A, B`
-</div>
-</div>
-
-
-
-
----
-
-# 存储器和时钟
-
-响了十二秒的电话我没有接，只想要在烟花下闭着眼~
-
-组合电路：不存储任何信息，只是一个 `输入` 到 `输出` 的映射（有一定的延迟）
-
-时序电路：有 **状态** ，并基于此进行计算
-
-
----
-
-# 时钟寄存器 / 寄存器 / 硬件寄存器
-
-register
-
-存储单个位或者字
-
-- 以时钟信号控制寄存器加载输入值
-- 直接将它的输入和输出线连接到电路的其他部分
-
-
-<div grid="~ cols-2 gap-12" mt-8>
-<div>
-
-![clock-1](/04-Arch-ISA-and-Logic/clock-1.png){.h-45.mx-auto}
-
-</div>
-
-<div>
-
-![clock-2](/04-Arch-ISA-and-Logic/clock-2.png){.h-45.mx-auto}
-
-</div>
-</div>
-
-在 Clock 信号的上升沿，寄存器将输入的值采样并加载到输出端，其他时间输出端保持不变
-
----
-
-# 随机访问存储器 / 内存
-
-memory
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-以 **地址** 选择读写
-
-包括：
-
-- 虚拟内存系统，寻址范围很大
-- 寄存器文件 / 程序寄存器，个数有限，在 Y86-64 中为 15 个程序寄存器（`%rax` ~ `%r14`）
-
-可以在一个周期内读取和 / 或写入多个字词
+![control_hazard_jxx_bubble_2](/05-Arch-Sequential-and-Pipelined/control_hazard_jxx_bubble_2.png){.mx-auto}
 
 </div>
 
 <div>
 
-![memory](/04-Arch-ISA-and-Logic/memory.png){.h-50.mx-auto}
+![load_use_hazard_solution_bubble](/05-Arch-Sequential-and-Pipelined/load_use_hazard_solution_bubble.png){.mx-auto}
 
 </div>
 </div>
 
+---
+
+# 异常处理（气泡 / 暂停）：访存阶段
+
+bubble / stall in memory stage
+
+注意：bubble 和 stall 不能同时为真。
 
 
+```hcl
+# 是否需要暂停流水线寄存器 M？
+bool M_stall = 0;
+# 是否向流水线寄存器 M 注入气泡？
+# 当异常通过内存阶段时开始插入气泡
+bool M_bubble = m_stat in { SADR, SINS, SHLT } || W_stat in { SADR, SINS, SHLT };
+```
+
+---
+
+# 异常处理（气泡 / 暂停）：写回阶段
+
+bubble / stall in writeback stage
+
+注意：bubble 和 stall 不能同时为真。
+
+```hcl
+# 是否需要暂停流水线寄存器 W？
+bool W_stall = W_stat in { SADR, SINS, SHLT };
+# 是否向流水线寄存器 W 注入气泡？
+bool W_bubble = 0;
+```
+
+---
+
+# 特殊的控制条件
+
+special control conditions
+
+![special_condition](/05-Arch-Sequential-and-Pipelined/special_condition.png){.mx-auto.h-50}
+
+<div grid="~ cols-2 gap-8" text-sm>
+<div>
+
+组合 A：执行阶段中有一条不选择分支（预测失败）的跳转指令 `JXX`，而译码阶段中有一条 `RET` 指令。
+
+即，`JXX` 指令的跳转目标 `valC` 对应的内存指令是一条 `RET` 指令。
+
+</div>
+
+<div>
+
+组合 B：包括一个加载 / 使用冒险，其中加载指令设置寄存器 `%rsp`，然后 `RET` 指令用这个寄存器作为源操作数。
+
+因为 `RET` 指令需要正确的栈指针 `%rsp` 的值去寻址，才能从栈中弹出返回地址，所以流水线控制逻辑应该将 `RET` 指令阻塞在译码阶段。
+
+</div>
+</div>
+
+---
+
+# 特殊的控制条件：组合 A
+
+special control conditions: combination A
+
+![combination_a](/05-Arch-Sequential-and-Pipelined/combination_a.png){.mx-auto.h-40}
 
 
+<div grid="~ cols-2 gap-12" text-sm>
+<div>
+
+组合情况 A 的处理与预测错误的分支相似，只不过在取指阶段是暂停。
+
+当这次暂停结束后，在下一个周期，PC 选择逻辑会选择跳转后面那条指令的地址，而不是预测的程序计数器值。
+
+所以流水线寄存器 F 发生了什么是没有关系的。
+
+<div text-sky-5>
+
+气泡顶掉了 `RET` 指令的继续传递，所以不会发生第二次暂停。
+
+</div>
+
+
+</div>
+
+<div>
+
+
+```hcl
+# 指令应从哪个地址获取
+word f_pc = [
+  # 分支预测错误时，从增量的 PC 取指令
+  # 传递路径：D_valP -> E_valA -> M_valA
+  # 条件跳转指令且条件不满足时
+  M_icode == IJXX && !M_Cnd : M_valA;
+  # RET 指令终于执行到回写阶段时（即过了访存阶段）
+  W_icode == IRET : W_valM;
+  # 默认情况下，使用预测的 PC 值
+  1 : F_predPC;
+];
+```
+
+</div>
+</div>
+
+---
+
+# 特殊的控制条件：组合 B
+
+special control conditions: combination B
+
+
+![combination_b](/05-Arch-Sequential-and-Pipelined/combination_b.png){.mx-auto.h-40}
+
+
+<div grid="~ cols-2 gap-12" text-sm>
+<div>
+
+对于取指阶段，遇到加载/使用冒险或 `RET` 指令时，流水线寄存器 F 必须暂停。
+
+对于译码阶段，这里产生了一个冲突，制逻辑会将流水线寄存器 D 的气泡和暂停信号都置为 1。这是不行的。
+
+<div text-sky-5>
+
+我们希望此时只采取针对加载/使用冒险的动作，即暂停。我们通过修改 `D_bubble` 的处理条件来实现这一点。
+
+</div>
+
+
+</div>
+
+<div>
+
+
+```hcl
+# 是否需要注入气泡至流水线寄存器 D
+bool D_bubble =
+  # 错误预测的分支 
+  (E_icode == IJXX && !e_Cnd) || 
+  # 在取指阶段暂停，同时 ret 指令通过流水线
+  # 但不存在加载/使用冒险的条件（此时使用暂停）
+  !(E_icode in { IMRMOVQ, IPOPQ } &&
+   E_dstM in { d_srcA, d_srcB }) &&
+  # IRET 指令在 D、E、M 任何一个阶段
+  IRET in { D_icode, E_icode, M_icode };
+```
+
+</div>
+</div>
 
 ---
 layout: center

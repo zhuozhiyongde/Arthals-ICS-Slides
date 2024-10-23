@@ -66,11 +66,12 @@ TOC
 
 <div>
 
-0. [课程介绍 / Introduction](https://slide.huh.moe/00/)
-1. [数据表示 / Data Representation](https://slide.huh.moe/01/)
-2. [程序的机器表示 I / Machine Programming I](https://slide.huh.moe/02/)
-3. [程序的机器表示 II / Machine Programming II](https://slide.huh.moe/03/)
+0. [课程介绍](https://slide.huh.moe/00/)
+1. [数据表示](https://slide.huh.moe/01/)
+2. [程序的机器表示 I](https://slide.huh.moe/02/)
+3. [程序的机器表示 II](https://slide.huh.moe/03/)
 4. [程序的机器表示 III & ISA](https://slide.huh.moe/04/)
+5. [处理器架构：顺序与流水线](https://slide.huh.moe/05/)
 
 </div>
 
