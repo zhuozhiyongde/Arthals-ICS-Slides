@@ -787,6 +787,8 @@ SEQ vs SEQ+
 
 PIPE-
 
+<div class="text-sm">
+
 各个信号的命名：
 
 - 在命名系统中，大写的前缀 “D”、“E”、“M” 和 “W” 指的是 **流水线寄存器**，所以 `M_stat` 指的是流水线寄存器 `M` 的状态码字段。
@@ -795,6 +797,10 @@ PIPE-
 - 小写的前缀 `f`、`d`、`e`、`m` 和 `w` 指的是 **流水线阶段**，所以 `m_stat` 指的是在访存阶段 **中** 由控制逻辑块产生出的状态信号。
 
     可以理解为，对应阶段中，完成相应运算时才会是正确的值
+
+- 右图中没有转发逻辑，右侧的实线是流水线寄存器间（大写前缀）的同步。
+
+</div>
 
 
 
@@ -846,7 +852,7 @@ PIPE-
   - W：Write back，写回阶段
 - 同时，有个新模块 `selectA` 来选择 `valA` 的来源
   - `valP`：`call` `jXX`（后面讲，可以想想为啥，提示：控制冒险）
-  - `d_valA`：其他未转发的情况（后面讲）<button @click="$nav.go(41)">🔙</button>
+  - `d_rvalA`：其他未转发的情况（后面讲）<button @click="$nav.go(41)">🔙</button>
 
 </div>
 
@@ -910,6 +916,8 @@ data hazard
 
 <div class="text-sm">
 
+以 2F 的左边缘作为起始时刻，则：
+
 $$
 5(完成 W) - 1(开始 D，即完成 F) - 1(错开一条指令) = 3
 $$
@@ -960,6 +968,19 @@ data hazard resolution: stall
 
 ![stall](/05-Arch-Sequential-and-Pipelined/stall.png){.mx-auto}
 
+<div class="text-xs">
+
+- ↑ 5W、6W 的右边缘蓝色线代表直到此处，这条指令才能正确的更新寄存器，在 5W、6W 块内起始已经准备好了值，但是由于没有到时钟上升沿，所以并没有写入到只有在时钟上升沿才会采样输入、更新其内值的寄存器文件（注意不是流水线寄存器）。
+- ↑ 7D 的左边缘蓝色线代表第 7 个周期的译码 D 阶段流水线寄存器，我们需要在此时保证寄存器文件（注意不是流水线寄存器）的值正确，因为在这个 7D 阶段，寄存器文件不会遇到新的时钟上升沿，更新其内值、其输出。
+
+流水线寄存器 vs 寄存器文件：{.!mb-0}
+
+- 流水线寄存器：保存的是和流水线某一阶段运算所需的一些初始值
+- 寄存器文件：保存的是当前所有寄存器（`%rax` `%rbx` 等等）的值
+
+</div>
+
+
 </div>
 </div>
 
@@ -998,15 +1019,23 @@ stall vs bubble
 
 data hazard resolution: forwarding
 
-![data_hazard_2](/05-Arch-Sequential-and-Pipelined/data_hazard_2.png){.mx-auto.h-80}
+<div grid="~ cols-2 gap-12">
+<div>
 
-<div class="text-sm">
+实际上，在这里，所需要的真实  `%rax` 值，早在 4E 快结束时（其内红线）就已经计算出来了（3E 同理）。
 
-
-实际上，在这里，所需要的真实  `%rax` 值，早在 4E 快结束时就已经计算出来了。而我们需要用到它的是 5E 的开始。
+而我们需要用到它的是 5E 的开始（此时，5E 阶段的组合逻辑即将从其左边缘红线所代表的 E 执行阶段流水线寄存器中取出 `valA` `valB` `valC` 用于计算）。
 
 回忆：大写的寄存器是在对应阶段开始时就已经是正确的值。
 
+</div>
+
+<div>
+
+
+![data_hazard_2](/05-Arch-Sequential-and-Pipelined/data_hazard_2.png){.mx-auto}
+
+</div>
 </div>
 
 ---
@@ -1055,7 +1084,23 @@ data hazard: load / use hazard
 
 data hazard: load / use hazard
 
-![load_use_hazard](/05-Arch-Sequential-and-Pipelined/load_use_hazard.png){.mx-auto.h-100}
+<div grid="~ cols-2 gap-12">
+<div>
+
+在这里，所需要的真实  `%rax` 值，在 8M 快结束时（其内红线）才能从内存中取出，位于 `m_valM`。
+
+而我们需要用到它的是 8E 的开始（此时，8E 阶段的组合逻辑即将从其左边缘红线所代表的 E 执行阶段流水线寄存器中取出 `valA` `valB` `valC` 用于计算）。
+
+在图中可以清晰看出，这存在时间上的错位，所以是不可能的。
+
+</div>
+
+<div>
+
+![load_use_hazard](/05-Arch-Sequential-and-Pipelined/load_use_hazard.png){.mx-auto}
+
+</div>
+</div>
 
 ---
 
@@ -1071,7 +1116,7 @@ load / use hazard solution
 - 译码阶段中的指令暂停 1 个周期
 - 执行阶段中插入 1 个气泡
 
-此时，`m_valM` 的值已经更新完毕，所以可以转发到 `d_valA`。
+此时，`m_valM` 的值已经更新完毕，所以可以转发到 `d_valA`（然后被用于存入 `E_valA`）。
 
 `m_valM`：在 M 阶段内，取出的内存值
 
@@ -1157,8 +1202,7 @@ differences between structures
 - 把计算新 PC 计算放到了最开始
 - 目的：为了能够划分流水线做准备，当前指令到 D 阶段时，应当能开始下一条指令的 F 阶段
 - 依旧是没有转发逻辑、且顺序执行
-
-<button @click="$nav.go(27)">💡 结构差异图</button> 
+- <button @click="$nav.go(27)">💡 结构差异图</button> 
 
 </div>
 
@@ -1167,11 +1211,8 @@ differences between structures
 ### PIPE-
 
 - 在 SEQ+ 的基础上，增加了流水线寄存器
-- 增加了一些转发逻辑（但不是所有）
-- 新的转发源：`M_valA` `W_valW` `W_valE`（流水线寄存器们）
-- 转发目的地：`d_valA` `d_valB`
-
-<button @click="$nav.go(29)">💡 结构差异图</button> 
+- 没有转发逻辑
+- <button @click="$nav.go(29)">💡 结构差异图</button> 
 
 </div>
 
@@ -1180,9 +1221,11 @@ differences between structures
 ### PIPE
 
 - 在 PIPE- 的基础上，完善了转发逻辑，可以转发更多的计算结果（小写开头的，而不是只有大写开头的流水线寄存器）
-- 新的转发源：`e_valE` `m_valM`（中间计算结果们）
+- 增加了转发逻辑
+- 转发源：`M_valA` `W_valW` `W_valE`（流水线寄存器们）、`e_valE` `m_valM`（中间计算结果们）
+- 转发目的地：`d_valA` `d_valB` 
+- <button @click="$nav.go(42)">💡 结构差异图</button> 
 
-<button @click="$nav.go(42)">💡 结构差异图</button> 
 
 </div>
 
@@ -1249,7 +1292,7 @@ control hazard: RET
 
 为什么：取址阶段没有相关的硬件电路处理中间结果的转发！必须是流水线寄存器同步。
 
-所以需要插入 3 个气泡：
+所以需要插入 3 个气泡（以 3F 的左边缘作为起始时刻）：
 
 $$
 4(\text{RET } 完成 M) - 0(开始 F) - 1(错开一条指令) = 3
@@ -1267,7 +1310,7 @@ control hazard: JXX
 <div>
 
 - 分支逻辑发现不应该选择分支之前（到达执行 E 阶段），已经取出了两条指令，它们不应该继续执行下去了。
-- 这两条指令都没有导致程序员可见的状态发生改变（没到到执行 E 阶段）。
+- 这两条指令都没有导致程序员可见状态发生改变（没到到执行 E 阶段）。
 
 </div>
 
@@ -1309,6 +1352,35 @@ bool E_bubble =
   E_icode in { IMRMOVQ, IPOPQ } && 
   E_dstM in { d_srcA, d_srcB };
 ```
+
+</div>
+</div>
+
+---
+
+# 控制冒险：JXX
+
+control hazard: JXX
+
+<div grid="~ cols-2 gap-12">
+<div text-sm>
+
+1. 在第 4 个时钟周期内靠后的位置，在 4E 处的红线所在的执行阶段，通过组合逻辑计算得到 `jne` 的条件没有满足
+2. 于是这个信息被转发到了前面同一周期的 D、F 阶段，而这两个阶段正在分别进行运算，以准备第 5 个时钟周期初始的 E、D 流水线寄存器（两个蓝色框右边缘）
+3. 得到转发的信息后，他们分别通过设置两个值 `E_bubble` `D_bubble`（右图未画出），以告诉下一阶段
+4. 进入到第 5 个时钟周期后，E、D 阶段首先读取 E、D 流水线寄存器，发现各自的 `Bubble` 信号为真时，便会用 Bubble 气泡的 `nop` 指令顶掉第 5 个时钟周期时的 E、D 阶段的指令（也即第 4 个时钟周期时的 D、F 阶段的指令），从而实现了气泡的插入，且顶掉了错误的指令。
+
+</div>
+
+<div>
+
+![control_hazard_jxx](/05-Arch-Sequential-and-Pipelined/control_hazard_jxx.png){.mx-auto.h-40}
+
+<div class="text-sm">
+
+↑深蓝色框里是插入气泡的逻辑发生位置，深蓝色框右边缘代表得出的气泡信号存储到的流水线寄存器，左边缘代表得到转发开始设置的时间。
+
+</div>
 
 </div>
 </div>
