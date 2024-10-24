@@ -41,3 +41,5 @@ sudo cp -r dist/* "$TARGET_DIR"
 echo "Files have been copied to $TARGET_DIR"
 
 git reset --hard origin/main
+
+rm [0-9]*
