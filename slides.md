@@ -323,7 +323,9 @@ Relocatable Object File
 </div>
 </div>
 
-<!-- 
+<!--
+
+`.symtab` 是符号表（symbol table），它存放的是定义和引用的函数与全局变量的信息。
 
 还有 `.debug` 节，存储调试信息。`.line` 节，存储行号信息。
 
