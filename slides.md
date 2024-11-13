@@ -1386,11 +1386,11 @@ Compile-Time Interposition
 
 **概念**：通过在编译源代码时插入打桩函数来实现。
 
-**实现方式**：使用 `-D` 编译选项将标准函数替换为自定义函数。
+**实现方式**：使用 `-I` 选项指定头文件路径。
 
 编译命令：
 ```sh
-gcc -I.-o intc int.c mymalloc.o
+gcc -I. -o intc int.c mymalloc.o
 ```
 
 - `-I.`：告诉编译器在当前目录（`.`）中查找头文件（Include）
