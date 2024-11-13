@@ -6,7 +6,7 @@ theme: academic
 # background: https://cover.sli.dev
 highlighter: shiki
 # some information about your slides (markdown enabled)
-title: 06-Memory-Hierarchy-and-Cache
+title: 07-Linking
 info: |
   ICS 2024 Fall Slides
   Presented by Arthals
@@ -21,10 +21,10 @@ transition: fade-out
 # enable MDC Syntax: https://sli.dev/features/mdc
 mdc: true
 layout: cover
-coverBackgroundUrl: /06-Memory-Hierarchy-and-Cache/cover.jpg
+coverBackgroundUrl: /07-Linking/cover.jpg
 ---
 
-# 存储器层次结构、缓存 {.font-bold}
+# 链接 {.font-bold}
 
 2110306206 预防医学&信双 卓致用{.!text-gray-200}
 
@@ -42,923 +42,1306 @@ coverBackgroundUrl: /06-Memory-Hierarchy-and-Cache/cover.jpg
 
 ---
 
-# 随机访问存储器
+# 链接
 
-Random Access Memory, RAM
+Linking
 
-- 速度非常快
-- **断电后数据不可恢复**
-- 常用于运行时产生数据的存储
+**链接**：将多个目标文件组合成一个可执行文件。
 
-### 随机访问{.mb-4.mt-6}
+**目标文件**：编译器将源代码文件编译后的产物，但还未链接成最终的可执行文件。
 
-- 指在存储设备中，可以以任意顺序访问存储的数据，而不需要按照特定的顺序逐个读取。
-- 这种访问方式使得数据的读取和写入速度更快，尤其是在需要频繁访问不同位置的数据时。
+**可执行文件**：链接后的最终产物，这个文件可被加载（复制）到内存并执行。
 
----
+链接在 **编译时、加载时、运行时** 均可执行（后文会说都是啥）。
 
-# 随机访问存储器
+链接的优势：
 
-Random Access Memory, RAM
+- **代码模块化**：方便查找问题与维护，可以建立常见函数的库
+- **时间和空间效率**：只需要改一处代码可同时影响多个代码，只会编译你引用的库中用到的代码
 
-<div grid="~ cols-2 gap-12">
-<div>
 
-### SRAM
+<!-- 
 
-Static RAM，静态随机访问存储器
+这章确实翻译的一坨，看书体验很差。
 
-- 速度最快（仅次于寄存器文件）
-- 抗噪音干扰能力强，采用 **双稳态结构**{.text-sky-5}
-- 价格最高（晶体管更多，造价更高）
-- 常用于高速缓存
-
-![sram](/06-Memory-Hierarchy-and-Cache/sram.png){.h-40.mx-auto}
-
-</div>
-
-<div>
-
-### DRAM
-
-Dynamic RAM，动态随机访问存储器
-
-- 对干扰非常敏感
-- **需要不断地刷新以保持稳定性**{.text-sky-5}
-- 速度慢于 SRAM，价格更低
-- 多用于主存（内存）
-
-![dram](/06-Memory-Hierarchy-and-Cache/dram.png)
-
-</div>
-</div>
+ -->
 
 ---
 
-# DRAM 的读取
+# 从源代码到可执行文件
 
-DRAM read
+From source code to executable file
 
-- 通过 address 引脚传入地址
-- 在 DRAM 单元阵列中访存后通过 data 引脚输出数据
-- 通常会重复利用 address 引脚进行二维访存
+![compile_system](/07-Linking/compile_system.png)
 
-<div grid="~ cols-3 gap-12">
-<div>
-
-![dram_core](/06-Memory-Hierarchy-and-Cache/dram_core.png){.h-100px.mx-auto}
-
-DRAM 芯片{.text-center}
-
-- 由 $r$ 行，$c$ 列个 DRAM 超单元组成（组织成二维阵列）
-- 总共有 $d = r \times c$ 个超单元
-- 总容量：$d \times w$ 位数据
-
-</div>
-
-<div>
-
-![dram_supercell](/06-Memory-Hierarchy-and-Cache/dram_supercell.png){.h-100px.mx-auto}
-
-DRAM 超单元（SuperCell）{.text-center}
-
-- 由 $w$ 个 DRAM 单元组成，携带 $w$ 位数据
-
-</div>
-
-<div>
-
-![dram](/06-Memory-Hierarchy-and-Cache/dram.png){.h-100px.mx-auto}
-
-DRAM 单元（Unit）{.text-center}
-
-- 每个 DRAM 单元携带 $1$ 位数据
-
-</div>
-</div>
-
----
-
-# DRAM 的读取
-
-DRAM read
-
-1. 行缓冲区在传入行访问信号（RAS，Row Address Strobe，行地址选通）时复制一行内容，实现缓存
-2. 传入列地址选通信号（CAS，Column Address Strobe，列地址选通），从行缓冲区中选出指定列的数据
-
-二维访存：可以将原先需要 $m$ 位引脚的地址，拆分为两次 $m/2$ 位引脚的地址，即分别传入行地址和列地址
-
-![dram_ras_cas](/06-Memory-Hierarchy-and-Cache/dram_ras_cas.png){.mx-auto.h-60}
-
----
-
-# DRAM 的读取
-
-DRAM read
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-“8 个 8M x 8 的 64 MB 内存模块”
-
-- 8 个 DRAM 芯片
-- 每个芯片由 8M 个超单元组成
-- 每个超单元携带 8 位（bit）数据
-- 总容量：$8 \times 8M \times 8 \text{bit} = 64 \text{MB}$
-
-可以利用相同的地址引脚，快速取出 64 位（bit）数据
-
-（回忆：地址是超单元的地址）
-
-</div>
-
-<div>
-
-![dram_example](/06-Memory-Hierarchy-and-Cache/dram_example.png)
-
-</div>
-</div>
-
----
-
-# 增强的 DRAM
-
-Enhanced DRAM
-
-重要！经常考选择题辨析。
-
-<div grid="~ cols-2 gap-6" text-sm>
-<div>
-
-#### 快页存取DRAM
-
-- Fast Page Mode DRAM（FPM DRAM）
-- FPM DRAM 允许对同一行连续地址访问可以直接从行缓冲区得到服务{.text-sky-5}（从而减少 `RAS` 请求）。
-
-</div>
-
-<div>
-
-#### 扩展数据输出DRAM
-
-- Extended Data Out DRAM（EDO DRAM）
-- FPM DRAM 的增强版
-- 它允许 `CAS` 信号在时间上靠得更紧密一点
-
-</div>
-
-<div>
-
-#### 同步DRAM
-
-- Synchronous DRAM（SDRAM）{.text-sky-5}
-- 使用同步控制信号（时钟上升沿），能更快速输出超单元内容。
-- FPM 和 EDO DRAM 是异步控制。
-
-![sdram](/06-Memory-Hierarchy-and-Cache/sdram.png){.w-70.mx-auto}
-
-</div>
-
-<div>
-
-#### 双倍数据速率同步DRAM
-
-- Double Data-Rate Synchronous DRAM（DDR SDRAM）
-- SDRAM 的增强版本，通过使用两个时钟沿（同时使用上升沿和下降沿）作为控制信号
-- 使得 DRAM 速度翻倍
-
-![ddrm](/06-Memory-Hierarchy-and-Cache/ddrm.png){.w-70.mx-auto}
-
-</div>
-</div>
-
-省流：全都是 DRAM 的增强版，和 SRAM 没有关系。
-
----
-
-# ROM
-
-Read-Only Memory
-
-只读存储器（非易失性存储器）
-
-- 断电后仍然能保存数据
-- 常用于数据的持久性存储
-- 常见：闪存
-- SSD 基于闪存
-
----
-
-# 磁盘存储
-
-Disk Storage
-
-- 非易失性存储器，断电后数据不丢失
-- 容量数量级：GB~TB
-- 访问时间：ms 级别
-
----
-
-# 磁盘结构
-
-Disk Structure
-
-![disk_structure](/06-Memory-Hierarchy-and-Cache/disk_structure.png){.mx-auto.h-60}
-
-- 磁盘：由多个盘片构成，每个盘片有 2 个可读写面
-- 磁道：盘片表面同一半径的圆周，每个盘面有多个磁道
-- 扇区：磁道被划分成一段段数据块
-- 柱面：**所有盘片** 的同一半径磁道集合
-
----
-
-# 磁盘容量
-
-Disk Capacity
-
-容量公式：
+$$
+\text{.c} \xrightarrow{\text{cpp}} \text{.i} \xrightarrow{\text{cc1}} \text{.s} \xrightarrow{\text{as}} \text{.o} \xrightarrow{\text{ld}} \text{prog}
+$$
 
 <div class="text-sm">
 
-$$
-\text{磁盘容量} = \text{每个扇区字节数} \times \text{每个磁道平均扇区数} \times \text{每个表面磁道数} \times \text{每个盘片表面数(2)} \times \text{盘片数}
-$$
+<v-clicks>
+
+
+- `gcc`：编译器驱动程序
+- `cpp`：C 预处理（c preprocessor），将 xx.c 翻译成一个 ASCII 码的 **中间文件**{.text-sky-5} xx.i（intermediate file）
+- `cc1`：C 编译器（c compiler），将 xx.i 翻译成一个 ASCII **汇编语言文件**{.text-sky-5} xx.s（assembly language file）
+- `as`：汇编器（assembler），将 xx.s 翻译成一个 **可重定位目标文件**{.text-sky-5} xx.o（relocatable object file）
+- `ld`：链接器（linker），将 xx.o 和其他的 xx.o，以及必要的系统目标文件组合起来，创建一个**可执行目标文件**{.text-sky-5} prog
+
+</v-clicks>
+
+<span class="text-sm text-gray-5">
+
+\* 书 1.2 章，知道大家都没看，可以回去看。
+
+</span>
+
 
 </div>
 
-衍生概念：
-
-- 记录密度：磁道一英寸能放的位数
-- 磁道密度：从圆心出发半径一英寸能有多少条磁道
-- 面密度：记录密度 × 磁道密度
 
 ---
 
-# 多区记录
+# 静态链接
 
-Multi-Zone Recording
-
-<div grid="~ cols-2 gap-4">
-<div>
-
-### 传统方法
-
-每个磁道都划分为相同数量的扇区，则：
-
-- 扇区数目是由最内磁道决定的
-- 外周磁道会有很多空隙
-
-
-
-</div>
-
-<div>
-
-
-### 多区记录方法
-
-- 将柱面划分为若干组
-- 每组内部采用相同的扇区数，不同组间扇区数可不同
-- 能有效利用空间
-
-</div>
-
-![disk_traditional](/06-Memory-Hierarchy-and-Cache/disk_traditional.svg){.mx-auto.h-40}
-
-![disk_multi_zone](/06-Memory-Hierarchy-and-Cache/disk_multi_zone.svg){.mx-auto.h-40}
-</div>
-
----
-
-# 计量单位
-
-Unit of measurement
+Static Linking
 
 <div grid="~ cols-2 gap-12">
 <div>
 
+### main.c
+```c
+int sum(int *a, int n);  // 这里声明了函数，但未定义
+int array[2] = {1, 2};  
 
-DRAM 和 SRAM 容量相关计量单位：
+int main()  
+{  
+    int val = sum(array, 2);  
+    return val;  
+}
+```
 
-- K = $2^{10}$
-- M = $2^{20}$
-- G = $2^{30}$
-- T = $2^{40}$
+### sum.c
+```c
+int sum(int *a, int n)   // 这里定义了函数
+{  
+    int i, s = 0;  
+    for (i = 0; i < n; i++) {  
+        s += a[i];  
+    }  
+    return s;  
+}
+```
 
 </div>
 
-<div>
+<div flex="~ col gap-4 justify-center items-center">
 
+![compile_system](/07-Linking/compile_system.png)
 
-磁盘和网络等 I/O 设备容量计量单位：
-
-- K = $10^3$
-- M = $10^6$
-- G = $10^9$
-- T = $10^{12}$
+![static_linking](/07-Linking/static_linking.png){.h-60}
 
 </div>
 </div>
-
-省流版本：
-
-- 内存（含）及以上（更快），使用 2 的幂次作为单位{.text-sky-5}
-- 磁盘及以下（更慢），使用 10 的幂次作为单位{.text-sky-5}
 
 ---
 
-# 磁盘读写
+# 静态链接
 
-Disk Read/Write
+Static Linking
 
-传动臂末端具有读写头，通过以下步骤进行读写：
+在静态链接中，链接器需要实现如下功能：
 
-1. **寻道**：通过旋转将读写头移动到对应磁道上（$T_{\text{seek}}$）
-2. **旋转**：等待对应扇区开头旋转到读写头位置（$T_{\text{rotate}}$），最差情况为 $\frac{1}{\text{RPM}} \times 60 \text{s/min}$，接近于寻道时间
-3. **传送**：开始读写，每个扇区的平均传送速率（$T_{\text{transfer}}$），一般可忽略
+- **符号解析**{.text-sky-5}：将 **符号引用** 与输入的可重定位目标文件中的 **符号表** 中的一个确定的符号（全局变量、函数等）关联起来。
+- **重定位**{.text-sky-5}：**合并重定位输入模块**，将符号定义与一个地址关联起来，并为找到的每个符号指向对应的该地址。
+
+---
+
+# 目标文件
+
+Object File
+
+1. **可重定位目标文件**
+   - 这是一个包含计算机能直接理解的代码和数据的文件，**但它还不能单独运行**{.text-sky-5}。
+   - 它就像是一个半成品，需要和其他半成品合并在一起才能变成一个完整的产品。
+2. **可执行目标文件**
+   - 这是一个已经准备好 **可以直接在计算机上运行的文件**{.text-sky-5}。
+   - 它就像是一个已经组装好的玩具，拿到手就可以玩了，不需要再做其他操作。
+3. **共享目标文件**
+   - **特殊类型的可重定位目标文件**{.text-sky-5}，可以在程序运行的时候 **动态加载**{.text-sky-5} 进来使用。
+   - 它就像是一个插件，可以在需要的时候装上去，不需要的时候可以取下来。
+
+---
+
+# 可重定位目标文件
+
+Relocatable Object File
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-![disk_seek](/06-Memory-Hierarchy-and-Cache/disk_seek.png){.h-40.mx-auto}
-
-<div text-center>
-
-寻道时间：$T_{\text{seek}}$
-
-</div>
-
-</div>
-
-<div>
-
-![disk_rotate](/06-Memory-Hierarchy-and-Cache/disk_rotate.png){.h-40.mx-auto}
-
-<div text-center> 
-
-旋转时间：$T_{\text{rotate}}$
-
-</div>
-
-</div>
-
-</div>
-
----
-
-# SSD 固态硬盘
-
-Solid State Disk
-
-固态硬盘（Solid State Disk，SSD）是一种基于闪存的存储技术，是传统旋转磁盘的替代产品。
-
-SSD 价格贵于旋转磁盘。
-
-<div grid="~ cols-2 gap-12">
-
-<div>
-
-#### SSD 层级结构{.my-4}
-
-- SSD，闪存由多个闪存块组成
-- 闪存块（Block），$0 \sim B-1$，每个块包含多个闪存页
-- 闪存页（Page），$0 \sim P-1$，每个页包含 512B～4KB 数据
-
+```
+ELF 可重定位目标文件
+│
+├── ELF 头（ELF Header）[低地址]
+│
+├── 节（Sections）
+│   ├── .text（机器代码）
+│   ├── .rodata（只读数据）
+│   ├── .data（已初始化数据）
+│   ├── .bss（未初始化数据）
+│   ├── .symtab（符号表）
+│   ├── .rel.text（重定位信息）
+│   ├── .rel.data（重定位信息）
+│   ├── .debug（调试信息）
+│   └── .strtab（字符串表）
+│
+├── 节头部表（Section Header Table）[高地址]
+│   ├── 节头部条目 1
+│   ├── 节头部条目 2
+│   ├── ...
+│   └── 节头部条目 N
+```
 
 </div>
 
 <div>
 
-![ssd](/06-Memory-Hierarchy-and-Cache/ssd.png)
+
+![relocatable_object_file](/07-Linking/relocatable_object_file.png)
 
 </div>
-
 </div>
 
 ---
 
-# SSD 读写特性
+# 可重定位目标文件
 
-SSD Read/Write Characteristics 
-
-- 速度：读 > 写，顺序访问 > 随机访问
-- 数据以页为单位读写，页所在块必须先擦除再写入（全部置为 1）{.text-sky-5}
-- 写操作前需复制 **页内容** 到 **新块** 并 **擦除旧块**
-- 一旦一个块被擦除了，块中每一个页都可以不需要再进行擦除就写一次
-- 每个块在反复擦除后会磨损乃至损坏（约 100,000 次），需要通过闪存翻译层管理，以最小化擦除次数
-
-
-![ssd](/06-Memory-Hierarchy-and-Cache/ssd.png){.h-60.mx-auto}
----
-
-# 局部性
-
-Locality
-
-**局部性**：程序倾向于引用最近引用过的数据项的邻近的数据项，或者最近引用过的数据项本身。
-
-- **空间局部性**：相邻位置的变量被集中访问（最近引用过的数据项及其邻近数据项）
-- **时间局部性**：同一变量在短时间内被重复访问（最近引用过的数据项本身）
-
-注意，指令也是数据的一种，因此指令也有局部性。
-
-
----
-
-# 步长与引用模式
-
-stride and reference pattern
-
-- **步长为 $k$ 的引用模式**：每隔 $k$ 个元素访问一次，**步长越短，空间局部性越强。**{.text-sky-5}（行优先访问好于列优先访问）
-- **指令的局部性**：指令按顺序执行，例如 `for` 循环，具有良好的时间（循环体、循环变量复用）和空间局部性（循环体内指令连续）。
-
-循环次数越多越好，循环体越小越好
-
----
-
-# 存储器层次结构
-
-Memory Hierarchy
+Relocatable Object File
 
 <div grid="~ cols-2 gap-12">
 <div>
 
-- 越靠近 CPU 的存储器，速度越快，单位比特成本越高，容量越小
-- 越远离 CPU 的存储器，速度越慢，单位比特成本越低，容量越大
+### ELF 头
 
-通常，我们使用 $L_k$ 层作为 $L_{k+1}$ 层的缓存
+存储关于这个二进制文件的一般信息：
 
-如果我们要在 $L_{k+1}$ 中寻找数据块 $a$，我们首先应该在 $L_k$ 中查找。
+文件的类型、字节序、ELF 头长度、节头部表偏移量、节头部表条目大小和数量等信息。
 
-- **缓存命中**：如果能找到，我们就不必访问 $L_{k+1}$
-- **缓存不命中**：如果找不到，我们才去访问 $L_{k+1}$（那就要花较长时间来复制了）
+运行时，会根据这些信息：
 
+1. 先定位到 ELF 头
+2. 然后根据 ELF 头中的信息找到节头部表
+3. 再根据节头部表找到相应的节
 
 </div>
 
 <div>
 
-![memory_hierarchy](/06-Memory-Hierarchy-and-Cache/memory_hierarchy.png)
+
+![relocatable_object_file](/07-Linking/relocatable_object_file.png)
 
 </div>
 </div>
 
 ---
 
-# 缓存替换策略
+# 可重定位目标文件
 
-Cache Replacement Policy
+Relocatable Object File
 
-如果缓存已满，我们需要决定替换 / 驱逐哪个现有块（要腾地方）。
-
-<div grid="~ cols-3 gap-12" mt-8>
+<div grid="~ cols-2 gap-12">
 <div>
 
-### 最近最少使用
+### 节
 
-- LRU（Least Recently Used）
-- 替换最后一次访问时间最久远的行
+
+`.text`：已编译程序的机器代码
+
+`.rodata`：只读<span class="text-sm text-gray-5">（read-only）</span>数据，如 `printf` 中的格式串、开关语句的跳转表、字符串常量等
+
+`.data`：<span text-sky-5> 已初始化的全局与静态 C 变量</span>
+
+`.bss`：<span text-sky-5> 未初始化的全局和静态 C 变量，以及所有被初始化为 0 的全局和静态 C 变量</span><br><span class="text-sm text-gray-5">（Block Storage Start / Better Save Space）</span>
+
+<span class="text-sm text-gray-5">
+
+\* 将初始化为 0 的变量放在 `.bss` 段而不是 `.data` 段，可以使可执行文件更小，因为 `.bss` 段只需要记录变量的大小和位置，而不需要存储实际的 0 值（直到运行时才真的去内存中分配空间）。
+
+</span>
 
 </div>
+
 
 <div>
 
-### 最不常使用
 
-- LFU（Least Frequently Used）
-- 替换过去某个时间窗口内引用次数最少的行
-
+![relocatable_object_file](/07-Linking/relocatable_object_file.png)
 
 </div>
-
-<div>
-
-### 随机替换
-
-- 随机选择一个块进行替换
-
 </div>
-
-</div>
-
-LRU 不一定比随机替换好。具体哪个策略好，还取决于数据分布。{.text-sky-5}
 
 ---
 
-# 缓存不命中的类型
+# 可重定位目标文件
 
-Cache Miss Types
+Relocatable Object File
 
-- **冷不命中 / 强制性不命中**：数据块从未进入缓存，短暂性，在 **暖身** 后不会出现
-- **冲突不命中**：由于冲突性放置策略的存在，缓存块的预期位置被其他数据块占据（但是实际上放得下，工作集小于缓存容量）
-- **容量不命中**：与冲突性放置策略无关，工作集大于缓存容量，怎么摆都放不下
+<div grid="~ cols-2 gap-12">
+<div>
 
-![miss](/06-Memory-Hierarchy-and-Cache/miss.svg)
+### 节
+
+
+`.symtab`：符号表 <span class="text-sm text-gray-5">（symbol table）</span>，存放定义和引用的函数与全局变量信息
+
+`.rel.text`：重定位信息 <span class="text-sm text-gray-5">（relocate text）</span>
+
+`.rel.data`：重定位信息 <span class="text-sm text-gray-5">（relocate data）</span>，（未初始化或为 0 的变量不需要重定位）
+
+`.strtab`：字符串表 <span class="text-sm text-gray-5">（string table）</span> ，包括： 
+
+<span class="text-sm text-gray-5">
+
+- `.symtab` 和 `.debug` 节中的符号表
+- 节头部中的节名字
+
+字符串表就是以 null（`\0`）结尾的字符串的序列。
+
+</span>
+
+
+</div>
+
+
+<div>
+
+
+![relocatable_object_file](/07-Linking/relocatable_object_file.png)
+
+</div>
+</div>
+
+<!-- 
+
+还有 `.debug` 节，存储调试信息。`.line` 节，存储行号信息。
+
+-->
 
 ---
 
-# 抖动
+# 可重定位目标文件
 
-Thrashing
+Relocatable Object File
 
-**抖动**：当多个数据频繁被访问，但它们无法同时全部放入缓存时，系统不断地在缓存和主存之间进行的频繁数据替换。
+<div grid="~ cols-2 gap-12">
+<div>
 
-![thrashing](/06-Memory-Hierarchy-and-Cache/thrashing.svg){.mx-auto.h-60}
+### 节头部表
 
-一共只有 4 个位置，但是要放 5 个数据，还都要用，只能不断替换。{.text-center}
+存储不同部分的起始位置。
+
+</div>
+
+<div>
+
+![relocatable_object_file](/07-Linking/relocatable_object_file.png)
+
+</div>
+</div>
 
 
 ---
 
-# 缓存组织结构
+# 符号和符号表
 
-Cache Organization
+Symbols and Symbol Table
+
+每个可重定位目标模块 $m$ 都有一个符号表，包含符号的定义和引用详情，它们包括：
+
+- **全局符号**：$m$ 定义并能被其他模块 $n$ 引用的，对应非静态的 C 函数和全局变量。
+- **局部符号**：$m$ 定义且 **只**{.text-sky-5} 在模块 $m$ 内自己使用的，对应带 `static` 属性的 C 函数和全局变量，这些符号在模块 $m$ 内任何位置都可见。
+- **外部符号**：$m$ 引用但 $m$ 中 **未定义**{.text-sky-5} 的，对应其他模块 $n$ 定义的函数或全局变量。
+
+符号表 **不关心本地非静态程序变量**，如：
+
+```c{2}
+int main() {
+    int a = 1;
+    return 0;
+}
+```
+
+这里的 `a` 是局部变量，不会出现在符号表中，而是出现在栈中。
+
+<button @click="$nav.go(14)">🔙</button>
+
+
+---
+
+# Static 属性
+
+`static` Attribute
+
+`static` 定义的函数和全局变量 **只能在其声明模块中使用（类似 C++ 的 `private`）**{.text-sky-5}，对其他模块不可见。
+
+编译器会在 `.data` 或 `.bss` 中为其分配空间，创造一个具有唯一名字的符号。
 
 <div grid="~ cols-2 gap-12">
 <div text-sm>
 
-一个计算机系统，其中每个存储器地址有 $m$ （<span text-sky-5>m</span>emory）位，从而形成 $M=2^m$ 个不同的地址。
+在右侧代码中：
 
-- 高速缓存被组织成一个有 $S=2^s$（<span text-sky-5>s</span>et）个高速缓存组的数据组。
-- 每个组包含 $E$（lin<span text-sky-5>e</span>）个高速缓存行。
-- 每行包含一个 $B=2^b$ （<span text-sky-5>b</span>lock）字节的数据块。
-
-每个行有：
-
-- 有效位（valid bit）：1 位，标明该行是否包含有意义的信息
-- 标记位（tag bit）：$t=m-(b+s)$ 位，用于标识存储在该高速缓存行中的地址
-- 数据块：$B=2^b$ 字节，存储实际数据
-
-总容量（<span text-sky-5>C</span>apacity）：$C=B \times E \times S$ 字节，不包括标记位和有效位 
-<button @click="$nav.go(39)">🔙</button>
-
+- 带有 `static` 关键字的变量会出现在符号表中，且在 `.data` 或 `.bss` 中分配空间
+- 未带有 `static` 关键字的变量不会出现在符号表中，而是出现在栈中
+- 由于出现了重名的 `static` 变量，编译器生成不同名称的局部链接器符号，如 `x.1` 表示函数 `f` 中的静态变量，而 `x.2` 表示函数 `g` 中的静态变量
 
 
 </div>
 
 <div>
 
-![cache_arch](/06-Memory-Hierarchy-and-Cache/cache_arch.png)
+
+```c
+int f() {
+    static int x = 0;
+    int y = 1;
+    return x + y;
+}
+
+int g() {
+    static int x = 1;
+    int y = 2;
+    return x + y;
+}
+```
 
 </div>
 </div>
 
 ---
 
-# 缓存地址划分
+# 符号表结构
 
-Cache Address Division
+Symbol Table Structure
 
 <div grid="~ cols-2 gap-12">
-<div>
+<div text-sm>
 
-1 个地址，总共有 $m$ 位，从 **高位到低位** 划分如下：
-
-- 标记位：$t$
-- 组索引：$s$
-- 块偏移：$b$
-
-> - 小写符号是位数
-> - 大写符号是位数对应的 2 的幂次，代表一个总数。
-
-
+- `name`：指向符号的 null（`\0`） 结束的字符串名字
+- `value`
+  - 对于可重定位的模块来说，表示相对于定义所在节（`section`）起始位置的偏移
+  - 对于可执行目标文件来说，该值是一个绝对运行时地址
+- `size`：目标的大小（字节为单位）
+- `type`：符号类型（函数或数据）
+- `binding`：符号是否是本地的还是全局的（是否可以被其他模块引用，即有无 `static` 关键字）<button @click="$nav.go(12)">💡</button>
+- `section`：符号所在的节
 
 </div>
 
 <div>
 
-![cache_address](/06-Memory-Hierarchy-and-Cache/cache_address.png)
+```c
+typedef struct {
+    int name;        // .strtab 中的偏移
+    char type:4,     // 函数或数据
+         binding:4;  // 局部或全局
+    char reserved;   // 是否使用
+    short section;   // 节头部表索引
+    long value;      // 节内偏移或绝对地址
+    long size;       // 对象大小（字节）
+} Elf64_Symbol;
+```
 
 </div>
 </div>
 
 ---
 
-# 缓存寻址过程
+# 符号表条目分配
 
-Cache Addressing Process
+Allocation of Symbol Table Entries
 
-<div grid="~ cols-2 gap-12">
+每个符号将被分配到目标文件的某个节（section），如 `.text` `.data` `.bss` 等。
+
+有三个特殊的伪节（pseudosection），它们在节头部表中是没有条目的：
+
+- `ABS`：代表不该被重定位的符号（absolute）
+- `UNDEF`：代表未定义的符号（undefined）
+- `COMMON`：未被分配位置的未初始化的数据目标
+
+`COMMON` vs `.bss`：
+
+- `COMMON`：未初始化的全局变量，**从而它们可能定义在其他模块中**{.text-sky-5}
+- `.bss`：未初始化的静态变量，以及初始化为 0 的全局或静态变量，**必然定义在当前模块中**{.text-sky-5}
+
+<br>
+
+```c
+int a; // 未初始化的全局变量，属于 COMMON
+static int b; // 未被初始化的静态变量，属于 .bss
+```
+
+
+---
+clicks: 5
+---
+
+# 符号表条目分配
+
+Allocation of Symbol Table Entries
+
+<div class="text-sm">
+
+对于 `m.o` 和 `swap.o` 模块，对每个符号在 `swap.o` 中定义或引用的符号，指出是否在 **模块 `swap.o` 的 `.symtab` 节**{.text-sky-5} 中有一个符号条目。如果是，请指出该符号的模块（`swap.o` 或者 `m.o`）、符号类型（局部、全局或者外部）以及它在模块中被分配到的节（`.text`、`.data`、`.bss` 或 `COMMON`）。
+
+<div grid="~ cols-2 gap-4">
+<div grid="~ cols-2 gap-4">
 <div>
 
+```c
+// m.c
+void swap();
+int buf[2] = {1, 2};
 
-
-当一条加载指令 $A$ 访问存储地址 $A$ 时：
-
-1. **组选择**：根据地址 $A$ 的 **组索引位**，找到对应的组。
-2. **行匹配**：检查该组内是否有 **有效位有效** 且 **标记位匹配** 的缓存行。
-3. **字抽取**：若存在匹配行，则命中缓存，返回该行数据；
-4. **行替换**：否则，发生缓存不命中，选择一个现有的行/块驱逐，从低一级存储器中读取新数据放入缓存。
+int main() 
+{
+    swap();
+    return 0;
+}
+```
 
 </div>
 
 <div>
 
+```c
+// swap.c
+extern int buf [];
+
+int *bufp0 = &buf[0];
+int *bufp1;
+
+void swap(){
+  int temp;
+
+  bufp1 = &buf[1];
+  temp = *bufp0;
+  *bufp0 = *bufp1;
+  *bufp1 = temp;
+}
+```
+
+</div>
+</div>
+
+<div text-xs>
+
+<div :class="$clicks>0 ? 'hidden' : ''">
+
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf |               |         |              |            |
+| bufp0 |             |         |              |            |
+| bufp1 |             |         |              |            |
+| swap |               |         |              |            |
+| temp |               |         |              |            |
+
+</div>
+<div :class="$clicks==1 ? '' : 'hidden'">
+
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf | ✔             | 全局    | m.o             | .bss           |
+| bufp0 |             |         |              |            |
+| bufp1 |             |         |              |            |
+| swap |               |         |              |            |
+| temp |               |         |              |            |
 
 
-![cache_set_index](/06-Memory-Hierarchy-and-Cache/cache_set_index.png)
+</div>
+<div :class="$clicks==2 ? '' : 'hidden'">
 
-![cache_byte_index](/06-Memory-Hierarchy-and-Cache/cache_byte_index.png)
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf | ✔             | 全局    | m.o             | .bss           |
+| bufp0 | ✔           | 全局    | swap.o          | .data          |
+| bufp1 |             |         |              |            |
+| swap |               |         |              |            |
+| temp |               |         |              |            |
 
+
+</div>
+<div :class="$clicks==3 ? '' : 'hidden'">
+
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf | ✔             | 全局    | m.o             | .bss           |
+| bufp0 | ✔           | 全局    | swap.o          | .data          |
+| bufp1 | ✔           | 全局    | swap.o          | COMMON         |
+| swap |               |         |              |            |
+| temp |               |         |              |            |
+
+
+</div>
+<div :class="$clicks==4 ? '' : 'hidden'">
+
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf | ✔             | 全局    | m.o             | .bss           |
+| bufp0 | ✔           | 全局    | swap.o          | .data          |
+| bufp1 | ✔           | 全局    | swap.o          | COMMON         |
+| swap | ✔             | 全局   | swap.o         | .text          |
+| temp |               |         |              |            |
+
+
+</div>
+<div :class="$clicks==5 ? '' : 'hidden'">
+
+| 符号  | .symtab 条目? | 符号类型 | 在哪个模块中定义 | 节             |
+|-----|:-------------:|---------|-----------------|----------------|
+| buf | ✔             | 全局    | m.o             | .bss           |
+| bufp0 | ✔           | 全局    | swap.o          | .data          |
+| bufp1 | ✔           | 全局    | swap.o          | COMMON         |
+| swap | ✔             | 全局   | swap.o         | .text          |
+| temp | ✘             | 局部    | swap.o          |                |
+
+
+</div>
+</div>
 </div>
 </div>
 
 ---
 
-# 缓存地址划分
+# 符号解析
 
-Cache Address Division
+Symbol Resolution
 
-<div grid="~ cols-2 gap-12">
-<div>
+符号解析：在多个模块间，将每个引用与一个确定的符号定义关联起来。
 
-为什么划分设计成这样？
+链接时，将编译器输出的全局符号分为：
 
-1. 块偏移：我们肯定希望 **两个相连的字节在同一个块内**（块是数据交换的最小单位），这样空间局部性更好。从而我们将最低的 $b$ 位作为块偏移。
-2. 组索引：我们希望 **相邻的块可以放在不同的组内**，从而减少冲突不命中。从而我们将接下来的 $s$ 位作为组索引。
-3. 标记：利用地址的唯一性，我们将剩下的 $t$ 位作为标记，用以区分分在同一组的各个块。
+- **强符号**{.text-sky-5}：包含函数和已初始化的全局变量
+- **弱符号**{.text-sky-5}：未初始化的全局变量
 
+选择规则：
 
-</div>
+1. 不允许有多个同名的强符号
+2. 如果有一个强符号和多个弱符号同名，则选择强符号
+3. 如果有多个弱符号同名，则从这些弱符号中任意选择一个（一般选择第一个）
 
-<div>
+多个全局符号同名的时候，即使不违背上述规则，也有可能会导致潜在问题：类型混淆、预期以外的作用等。
 
-
-![cache_set_index_pos](/06-Memory-Hierarchy-and-Cache/cache_set_index_pos.png)
-
-<div text-center text-sm>
-
-此图中，除外了地址的最低 $b$ 位。
-
-</div>
-
-</div>
-</div>
+为了安全，尽量使用 `static` 属性定义全局变量。
 
 ---
 
-# 不同的缓存组织结构
+# 符号解析的问题
 
-Different Cache Organization
-
-<div grid="~ cols-3 gap-x-8" text-sm>
-<div>
-
-#### 直接映射高速缓存
-
-- $E=1$
-- 每个组仅有一行
-- 不止 1 个组
-- 最容易发生冲突不命中
-- 硬件最简单（只需匹配 1 次 Tag）
-
-</div>
-
-<div>
-
-#### 组相联高速缓存
-
-- $1 < E < C/B$
-- 每个组有多行
-- 不止 1 个组
-- <span text-sky-5> $E$ 称为路数（$E$ 路组相联） </span>
-
-</div>
-<div>
-
-#### 全相联高速缓存
-
-- <span text-sky-5> $E=C/B$ </span>
-- 1 个组拥有所有行
-- 只有 1 个组，$s=0$
-- 所有行可以任意放置，最灵活，最不易发生冲突不命中
-- 硬件最复杂（需要匹配 Tag 数最多）
-
-</div>
-
-
-
-![cache_direct_mapped](/06-Memory-Hierarchy-and-Cache/cache_direct_mapped.png){.w-60}
-
-![cache_set_associative](/06-Memory-Hierarchy-and-Cache/cache_set_associative.png){.w-60}
-
-![cache_fully_associative](/06-Memory-Hierarchy-and-Cache/cache_fully_associative.png){.w-60}
-
-</div>
-
----
-
-# 高速缓存读写策略
-
-Cache Read / Write Policy
-
-<div grid="~ cols-2 gap-12">
-<div>
-
-
-### 写命中
-
-写命中：当数据在缓存中时，写操作的策略。
-
-- 写回（Write Back）：写在缓存，直到被替换的时候再写到下层存储器<br><span class="text-sm text-gray-5">（需要额外的 1 位 dirty bit 来标识缓存中数据是否被修改）</span>
-- 直写（Write Through）：写缓存的同时直接写到下层存储器
-
-</div>
-
-<div>
-
-
-### 写不命中
-
-写不命中：当数据不在缓存中时，写操作的策略。
-
-- 写分配（Write Allocate）：写下层存储器的同时加载到缓存
-- 非写分配（Not Write Allocate）：只写到下层存储器，不改变缓存
-
-
-</div>
-</div>
-
-高速缓存层次结构中，下层一般采用写回。
-
-常见搭配：写回+写分配（效率高，因为试图利用局部性，可以减少访存次数），直写+非写分配
-
-<!-- 内存是个不准确的概念，实际上是下层存储器 -->
-
----
-
-# 高速缓存参数的性能影响
-
-Cache Parameter Performance Impact
-
-高速缓存大小（$C$）：
-- 高速缓存越大，命中率越高
-- 高速缓存越大，命中时间也越高，运行相对更慢
-
-块大小（$B$）：
-- 块大小越大，空间局部性越好
-- 块大小越大，时间局部性可能会变差，因为容量不变时，块越大，高速缓存行数（$E$）可能就会越少，损失时间局部性带来的命中率，不命中处罚大
-
----
-
-# 高速缓存参数的性能影响
-
-Cache Parameter Performance Impact
-
-相联度（$E$）：
-- $E$ 较高，降低冲突不命中导致抖动的可能性，因为下层存储器的不命中处罚很高，所以下层存储器的相联度往往更高，因为此时降低冲突不命中带来的收益很高
-- $E$ 越高，复杂性越高、成本越高
-- $E$ 越高，不命中处罚越高。因为高相联度缓存的替换策略（如 LRU）更复杂，导致在缓存未命中时，找到一个合适的缓存行来替换会花费更多时间
-- $E$ 增高，可能需要更多标记位（$t \geq \log_2 E$）、LRU 状态位
-- 原则是命中时间和不命中处罚的折中{.text-sky-5}
-
----
-
-# 高速缓存参数的性能影响
-
-Cache Parameter Performance Impact
-
-写策略：
-- 直写高速缓存容易实现
-- 写回高速缓存引起的传送较少
-- 一般而言，高速缓存越往下层，就越可能使用写回（因为直写无论如何都需要写到下层存储器，这是相对较慢（昂贵）的操作）
-
----
-
-# 存储器山
-
-Memory Hill
-
-![memory_hill](/06-Memory-Hierarchy-and-Cache/memory_hill.png){.h-100.mx-auto}
-
----
-
-# 存储器山：空间局部性
-
-Memory Hill: Spatial Locality
+Symbol Resolution Problems
 
 <div grid="~ cols-3 gap-4">
 <div>
 
-**步长（stride）对性能的影响**：
+### Case 1
 
-- 小步长访问数据时，空间局部性好，缓存命中率高，带宽利用率高。
-- 步长增加时，访问数据的空间局部性下降，缓存命中率降低，带宽利用率下降，吞吐量降低。
+```c
+// foo1.c
+int main()
+{
+    return 0;
+}
+
+// bar1.c
+int main() // 重复定义强符号
+{
+    return 0;
+}
+```
+
+</div>
+
+<div>
+
+### Case 2
+
+```c
+// foo2.c
+int x = 15213;
+int main()
+{
+    return 0;
+}
+
+// bar2.c
+int x = 15213; // 重复定义强符号
+int f()
+{
+    return 0;
+}
+```
+
+
+</div>
+
+<div>
+
+### Case 3
+
+```c
+// foo3.c
+#include <stdio.h>
+void f(void);
+int x = 15213;
+int main()
+{
+    f(); // 会修改 x 的值
+    printf("x = %d\n", x);
+    return 0;
+}
+
+// bar3.c
+int x;
+void f()
+{
+    x = 15212;
+}
+```
+
+</div>
+</div>
+
+---
+
+# 符号解析的问题
+
+Symbol Resolution Problems
+
+### Case 4
+
+<div grid="~ cols-3 gap-8">
+<div>
+
+
+```c
+// foo4.c
+#include <stdio.h>
+void f(void);
+
+int y = 15212; // 高地址
+int x = 15213; // 低地址
+
+int main()
+{
+    f();
+    printf("x = 0x%x y = 0x%x\n",
+            x, y);
+    // 0x0 0x80000000
+    return 0;
+}
+```
+
+</div>
+
+<div>
+
+```c
+// bar4.c
+double x;
+
+void f()
+{
+    x = -0.0;
+}
+```
+
+</div>
+
+<div>
+
+`x` 会按照 `double`（8 字节）的方式计算，但实际上 `x` 只占用 4 个字节的空间（因为它是 `int` 类型），这会导致对内存的非法访问。
+
+</div>
+</div>
+
+
+
+---
+
+# 静态库
+
+Static Libraries
+
+**静态库（Static Library）**：是一组目标文件的集合，通过将这些目标文件打包成一个单独的文件来实现代码的重用。静态库在编译时链接到应用程序中，生成一个包含所有代码的可执行文件。
+
+### Why 静态库？{.mb-4}
+
+1. 区分标准函数 / 程序函数：复杂 
+2. 所有标准函数放一起，存为单独的可重定位目标文件：文件体积太大，维护要重新打包
+3. 每个函数一个模块：文件多、维护复杂，手动指定链接累死了
+4. 相关的函数才放在一起：✔✔✔
+
+---
+
+# 静态库的创建和使用
+
+Creating and Using Static Libraries
+
+<div grid="~ cols-2 gap-8">
+<div>
+
+
+
+### 创建静态库{.my-2}
+
+1. 编译源文件生成目标文件（.o文件，object file）。
+    ```bash
+    gcc -c addvec.c multvec.c # -c 只编译，不链接
+    ```
+2. 使用 `ar`（archive）工具将目标文件打包成静态库：
+    ```bash
+    ar rcs libvector.a addvec.o multvec.o
+    ```
+</div>
+
+<div>
+
+
+### 使用静态库{.my-2}
+
+1. 编译使用静态库的程序文件。
+    ```bash
+    gcc -c main2.c
+    ```
+2. 链接生成可执行文件，指定静态库的位置。
+    ```bash
+    gcc -static -o prog2c main2.o ./libvector.a
+    ```
+    `-static`：指定静态链接，无需运行时链接<br>
+    或者使用 `-L` 和 `-l` 参数（library）：
+    ```bash
+    gcc -static -o prog2c main2.o -L. -lvector
+    ```
+
+</div>
+</div>
+
+---
+
+# 解析静态库引用
+
+Resolving Static Library References
+
+对于一行代码，链接器从左到右按需解析库中的符号：
+
+```bash
+gcc foo.c libx.a liby.a libx.a
+```
+
+集合定义：
+
+- $E$：最终所需要的成员目标文件（Exported），目标文件肯定丢进去，存档文件看有没有用上再决定。
+- $U$：未解析的符号（Undefined），没定义的符号就先加进去，遇到存档文件再看能不能匹配上。
+- $D$：已定义的符号（Defined），已经匹配上、找到定义的符号。
+
+解析完成后，不在 $E$ 中的成员目标文件会被丢掉（用不上）。
+
+解析完成后，$U$ 非空，链接器会输出一个错误并终止。
+
+---
+
+# 解析静态库引用
+
+Resolving Static Library References
+
+因为从左到右解析，所以在命令行链接的顺序变得至关重要。
+
+```bash
+gcc foo.c libx.a liby.a libz.a
+```
+
+和
+
+```bash
+gcc foo.c libz.a liby.a libx.a
+```
+
+结果不一样，前者会报错，后者不会。
+
+- `.a` 文件中也可能有未定义的符号，也可能依赖于其他 `.a` 文件
+- 在解析过程中，一个 `.a` 或 `.o` 文件可以出现多次。
+
+怎么做题：**画出依赖图，满足最终的次序能够遍历每条有向边。**
+
+---
+
+# 重定位
+
+Relocation
+
+
+**重定位节**：将所有相同类型的节合并为同一类型的新的聚合节，并把运行时内存地址赋给新的聚合节。这样，程序中的每一条指令和全局变量都有唯一的运行时内存地址了。
+
+**重定位符号**：链接器会修改代码节和数据节中对每个符号的引用，使得它们指向正确的运行时内存地址。这一步依赖于可重定位目标模块中的 **重定位条目**。
+
+---
+
+# 重定位条目
+
+Relocation Entries
+
+当 **汇编器** 生成一个目标模块时，它并不知道数据和代码最终将放在内存中的什么位置。
+
+所以，它就会生成一个**重定位条目**，告诉 **链接器** 将目标文件合并成可执行文件时如何修改这个引用。
+
+代码的重定位条目放在 `.rel.text` 中，数据的重定位条目放在 `.rel.data` 中。
+
+### ELF 重定位条目的格式
+
+```c
+typedef struct {
+    long offset;    /* 偏移量：引用重定位的偏移量 */
+    long type:32;   /* 重定位类型 */
+    long symbol:32; /* 符号表索引 */
+    long addend;    /* 常量部分：重定位表达式的常量部分 */
+} Elf64_Rela;
+```
+
+---
+
+# 重定位过程
+
+Relocation Process
+
+### 重定位类型{.mb-2}
+
+- `R_X86_64_PC32`：重定位一个使用 32 位 PC 相对地址的引用
+- `R_X86_64_32`：重定位一个使用 32 位绝对地址的引用
+
+相对地址：距离 PC 的**当前运行时值**的偏移量
+
+---
+clicks: 4
+---
+
+# 重定位过程
+
+Relocation Process
+
+<div grid="~ cols-3 gap-4">
+<div text-sm relative>
+
+<div :class="$clicks==0 ? 'opacity-100' : 'opacity-0'" transition duration-200 absolute>
+
+假设：
+
+- `ADDR(s)` 和 `ADDR(r.symbol)` 表示运行时地址，与之相对的，`s` 表示当前还没有重定位时，原始目标文件的地址。
+- 第 3 行计算的是需要被重定位的 4 字节引用的数值 $r$ 中的地址。
+- 如果这个引用使用的是 PC 相对寻址，那么它就用第 5～9 行来重定位。
+- 如果该引用使用的是绝对寻址，它就通过第 11～13 行来重定位。
+
+</div>
+
+<div :class="$clicks==1 ? 'opacity-100' : 'opacity-0'" transition duration-200 absolute>
+
+`refptr`：计算你要修改的地址（在哪里，现在留着的是 00，我们需要填写上正确的偏移量 / 地址）
+
+</div>
+
+<div :class="$clicks==2 ? 'opacity-100' : 'opacity-0'" transition duration-200 absolute>
+
+`refaddr`：链接后，填写相对值的地址
+
+这里利用了：偏移量（`r.offset`）不变。
+
+</div>
+
+<div :class="$clicks==3 ? 'opacity-100' : 'opacity-0'" transition duration-200 absolute>
+
+`r.addend`：补偿 `refaddr` 和运行时 `PC` 之间的差值
+
+`refaddr = ADDR(PC) + r.addend`
+
+这样，我们就有如下式子：
+
+`PC = refaddr - r.addend`
+
+`PC + *refptr = ADDR(r.symbol)`
+
+这正是我们想要的相对定位。
+
+</div>
+
+<div :class="$clicks==4 ? 'opacity-100' : 'opacity-0'" transition duration-200 absolute>
+
+`r.addend`：对于绝对重定位来讲，一般就设置为 0 了。
+
+此时，我们直接就有：
+
+`*refptr = ADDR(r.symbol)`
+
+</div>
+
 
 </div>
 
 <div col-span-2>
 
-![memory_hill_spatial_locality](/06-Memory-Hierarchy-and-Cache/memory_hill_spatial_locality.png)
+```c {all|3|3,7|5-10|12-16}{at:1}
+foreach section s {  /* 迭代节 */
+    foreach relocation entry r {  /* 迭代重定位条目 */
+        refptr = s + r.offset;  /* 需要重定位的引用的指针，要写哪里 */
+
+        /* 重定位 PC-relative 引用 */
+        if (r.type == R_X86_64_PC32) {
+            refaddr = ADDR(s) + r.offset;  /* 引用的运行时地址 */
+            /* addend = -4 */
+            *refptr = (unsigned) (ADDR(r.symbol) + r.addend - refaddr);
+        }
+
+        /* 重定位绝对引用 */
+        if (r.type == R_X86_64_32) {
+            /* addend = 0 */
+            *refptr = (unsigned) (ADDR(r.symbol) + r.addend); 
+        }
+    }
+}
+```
 
 </div>
 </div>
 
 ---
 
-# 存储器山：时间局部性
-
-Memory Hill: Temporal Locality
-
-<div grid="~ cols-3 gap-4">
+<div grid="~ cols-2 gap-8">
 <div>
 
-**工作集大小对性能的影响**：
+# 相对重定位举例
 
-- 小工作集大小时，数据可以更容易地装入上级存储器缓存，缓存命中率高，时间局部性好。
-- 工作集大小增加时，如果工作集超过某一级缓存容量，导致更多的数据需要从更低层次的存储中读取，传输速率下降，吞吐量降低，缓存命中率低，时间局部性差。
+PC-relative Relocation Example
+
+
+<div class="text-xs">
+
+
+```
+r.offset = 0xf
+r.symbol = sum
+r.type = R_X86_64_PC32
+r.addend = -4
+```
+
+- `r.offset`：`call` 指令第二个字节与 `main` 函数起始地址的偏移量 = `0xf`
+- `r.refptr`：要修改的地址，`s + r.offset` = `main + 0xf` = `0xf`
+- `refaddr`：引用的运行时地址 = `ADDR(s) + r.offset` = `0x4004d0 + 0xf` = `0x4004df`
+- `PC`：运行时的 PC，下一条指令的地址 = `0x4004e3`
+- `r.addend`：补偿 `refaddr` 和运行时 `PC` 之间的差值 = `0x4004df - 0x4004e3 = -4`
+- `ADDR(r.symbol)`：真实要得到的地址，也即 `sum` 的运行时地址 = `0x4004e8`
+
+`*refptr = (unsigned) (ADDR(r.symbol) + r.addend - refaddr) = (unsigned) (0x4004e8 + (-4) - 0x4004df) = 5`
 
 </div>
 
-<div col-span-2>
-
-![memory_hill_temporal_locality](/06-Memory-Hierarchy-and-Cache/memory_hill_temporal_locality.png)
-
-</div>
 </div>
 
----
-
-# 存储器山：预取
-
-Memory Hill: Prefetch
-
-<div grid="~ cols-3 gap-4">
 <div>
 
-**预取（prefetching）**：指在数据块被实际访问之前，提前将其加载到高速缓存中。
-
-
-- 自动识别顺序的、步长为 1 的引用模式
-- 提前将数据块取到高速缓存中，减少访问延迟
-- 提高读吞吐量，特别是在步长较小的情况下效果最佳
-
-</div>
-
-<div col-span-2>
-
-![memory_hill_prefetch](/06-Memory-Hierarchy-and-Cache/memory_hill_prefetch.png)
+![relocate_relative](/07-Linking/relocate_relative.png){.mx-auto}
 
 </div>
 </div>
 
 ---
 
-# 存储器层次、缓存习题
+<div grid="~ cols-2 gap-8">
+<div>
 
-Questions
 
-某磁盘的旋转速率为 7200RPM，每条磁道平均有 400 扇区，则一个扇区的平均传送时间为
+# 绝对重定位举例
 
-- A. 0.02 ms
-- B. 0.01 ms
-- C. 0.03 ms
-- D. 0.04ms
+Absolute Relocation Example
 
-<div v-click>
+<div class="text-xs">
 
-答案：A
 
-<div class="text-sm">
+```
+r.offset = 0xa
+r.symbol = array
+r.type = R_X86_64_32
+r.addend = 0
+```
 
-$$
-\text{平均传送时间} = \frac{60 \, \text{秒}}{\text{每分钟的旋转次数}}(\text{多少秒转一次}) \times \frac{1}{\text{每条磁道上的扇区数}}(\text{每个扇区平分}) \times 1000 \, \text{毫秒/秒}
-$$
+- `r.offset`：`call` 指令第二个字节与 `main` 函数起始地址的偏移量 = `0xa`
+- `r.refptr`：要修改的地址，`s + r.offset` = `main + 0xa` = `0xa`
+- `r.addend`：对于绝对重定位，设置为 0。
+- `ADDR(r.symbol)`：真实要得到的地址，也即 `array` 的运行时地址 = `0x601018`
+
+`*refptr = (unsigned) (ADDR(r.symbol) + r.addend) = (unsigned) (0x601018 + 0) = 0x601018`
 
 </div>
 
-解析：
+</div>
 
-$$
-\frac{60 \, \text{秒}}{7200 \, \text{RPM}} \times \frac{1}{400 \, \text{sectors/track}} \times 1000 \, \text{ms/sec} \approx 0.02 \, \text{ms}
-$$
+<div>
+
+![relocate_absolute](/07-Linking/relocate_absolute.png){.mx-auto}
+
+</div>
+</div>
+
+---
+
+# 可执行目标文件
+
+Executable Object File
+
+<div grid="~ cols-2 gap-12">
+<div text-sm>
+
+
+ELF 头描述文件的整体格式，包含程序的入口点（entry point），即程序运行时执行的第一条指令地址。
+
+**段**：链接器根据目标文件中 **属性相同的多个节合并后的节的集合**{.text-sky-5}，这个集合称为段。
+
+- `.init` 段：比可重定位目标文件多出来的，包含初始代码（`_init` 函数），会在程序开始时调用。
+- `.text` `.rodata` `.data` 段：与同名节对应，已被重定位到最终的运行时内存地址。
+- `.rel.text` 和 `.rel.data` 节：不再存在，因为已经完全链接。
+
+</div>
+
+<div>
+
+![executable_object_file](/07-Linking/executable_object_file.png){.mx-auto}
+
+<span class="text-xs text-gray-5">
+
+段代表的是可执行代码和数据等内存区域，而节则更加抽象，它代表的是文件中的一组相关数据。在 ELF 文件中，节是按照功能和目的来划分的，比如代码节、数据节、符号表节等等，而段则是按照内存区域来划分的。
+
+</span>
+
+</div>
+</div>
+
+---
+
+# 加载可执行目标文件
+
+Loading an Executable Object File
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+### 内存布局{.mb-2}
+
+- **代码段**：从地址 `0x400000` = $2^{21}$ 开始，后面是数据段
+- **堆内存**：由 `malloc` 分配，运行时堆在数据段之后
+- **用户栈**：从最大合法用户地址 $2^{48} - 1$ 向下增长
+- **内核区**：从地址 $2^{48}$ 开始，用于内核代码和数据段
+
+`_start`（入口点） → `_libc_start_main`（定义在 libc.so 中） → `main`
+
+</div>
+
+<div>
+
+![runtime_memory](/07-Linking/runtime_memory.png){.mx-auto}
+
+</div>
+</div>
+
+<!-- 
+
+实际上存在 虚拟内存映射，以及 ASLR（每次程序运行时，这些区域的**地址都会改变**，但**相对位置不变**）
+
+libc.so：一定会被链接。
+
+-->
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# 动态链接共享库
+
+Dynamic Linking Shared Libraries
+
+<div>
+
+共享库：**在运行时被动态加载和链接的库文件**{.text-sky-5}，通常以 `.so`（Linux）或 `.dll`（Windows）为后缀。
+
+- 节省资源：避免静态库复制很多次
+- 简化更新：更新共享库只需替换库文件，无需重新编译所有依赖的程序
+- 动态链接：运行时加载库文件，多个程序共享同一份库文件
+
+C 标准库 `libc.so` 通常是动态链接的。
+
+</div>
+
+</div>
+
+<div>
+
+![dynamic_linking](/07-Linking/dynamic_linking.png){.mx-auto}
+
+</div>
+</div>
+
+<!-- 
+
+回顾静态库的链接方式，我们可以发现其在链接的过程中从库中提取出需要执行的代码和其它可重定位文件一起生成可执行文件。但是这样做仍有一些不足之处：
+1.对于一些很基本的函数（比如I/O操作中的printf,scanf等），在每一个可执行文件的text段中都会存在其的一个副本，这对于磁盘空间来说是极大的浪费行为。
+2.如果库进行了更新或者改动，必须重新进行链接行为以生成新的可执行文件（这对一个复杂的系统来说是很不友好的，因为其意味着一个小改动可能会牵涉到很多显式操作）
+
+回忆我们之前的链接行为，我们总是修改代码当中的全局变量和函数的地址从而完成重定位行为，这种方法是低效而“笨重”的：这意味着在动态链接的过程，每一次对全局变量和函数地址的改动都会牵涉到引用其的所有代码的改变。我们显然不希望看到这种行为。
+
+所以我们需要使用位置无关代码来保证即使是使用动态链接共享库，我们也不会在运行中改变代码段(.text)（在静态链接的过程中因为一个可执行文件只会用到自己复制到内存当中的东西，所以这件事情是显然的）
+
+
+ -->
+
+---
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+# 动态链接共享库
+
+Dynamic Linking Shared Libraries
+
+<div>
+
+#### 链接器、加载器、动态链接器 {.mb-2.mt-4}
+
+- **链接器**：在编译阶段之后工作，将多个目标文件和库文件链接成一个可执行文件或库文件。
+- **加载器**：在程序执行阶段工作，将可执行文件加载到内存并准备好执行环境。
+- **动态链接器**：在加载器将程序加载到内存后、程序开始执行前工作，负责在运行时加载动态库并解析符号（重定位）。
+
+</div>
+
+</div>
+
+<div>
+
+![dynamic_linking](/07-Linking/dynamic_linking.png){.mx-auto}
+
+</div>
+</div>
+
+---
+clicks: 1
+---
+
+# 位置无关代码
+
+Position Independent Code
+
+位置固定：会引起内存的浪费，无法高效利用（Why?）
+
+<div :class="$clicks>0 ? 'opacity-100' : 'opacity-0'" transition duration-200>
+
+位置无关：共享库可以被加载到内存的任何位置，从而多个程序可以同时使用同一个共享库实例，节省内存。
+
+<span class="text-sm text-gray-5">
+
+需要使用 `-fpic` （flag position independent code）选项编译共享库
+
+</span>
 
 </div>
 
 ---
 
-# 存储器层次、缓存习题
+# 过程链接表（PLT） 和 全局偏移表（GOT）
 
-Questions
+Procedure Link Table and Global Offset Table, PLT & GOT
 
-<div class="text-sm">
+假设有一个共享库函数 `foo`，以下是调用过程：
 
-以下关于存储的描述中，正确的是？
+1. 在第一次调用 `foo` 时，程序跳转到 PLT 表的 `foo` 入口
+2. PLT 表的 `foo` 入口跳转到 **动态链接器的解析函数**{.text-sky-5}
+3. 动态链接器解析 `foo` 的地址，并将地址写入 GOT 表中相应的条目
+4. 动态链接器返回，程序继续执行 `foo` 函数
+5. 下一次调用 `foo` 时，PLT 表直接从 GOT 表中读取 `foo` 的地址并跳转，**无需再次解析**{.text-sky-5}
 
-- A. 由于基于 SRAM 的内存性能与 CPU 的性能有很大差距，因此现代计算机使用更快的基于 DRAM 的高速缓存，试图弥补 CPU 和内存间性能的差距。
-- B. SSD 相对于旋转磁盘而言具有更好的读性能，但是 SSD 写的速度通常比读的速度慢得多，而且 SSD 比旋转磁盘单位容量的价格更贵，此外 SSD 底层基于 EEPROM 的闪存会磨损。
-- C. 一个有 2 个盘片、10000 个柱面、每条磁道平均有 400 个扇区，每个扇区有 512 个字节的双面磁盘的容量为 8GB。
-- D. 访问一个磁盘扇区的平均时间主要取决于寻道时间和旋转延迟，因此一个旋转速率为 6000RPM、平均寻道时间为 9ms 的磁盘的平均访问时间大约为 19ms。
-- E. SDRAM 兼具 SRAM 和 DRAM 的特点。
+<!-- 
 
-<div v-click>
+如果代码位置是固定的，那么每个程序或库都需要在特定的内存地址执行。这会导致内存碎片的产生和浪费。例如，如果一个程序需要占用特定的内存区域，那么在该区域内的其他内存空间可能会被浪费掉。位置无关代码允许程序和库在内存中的任意位置加载和执行，从而更高效地利用内存空间。
 
-答案：B
+ -->
 
-- A. 选项中 SRAM 和 DRAM 位置反了
-- C. 选项中，硬盘容量 1GB=$10^9$ Byte，因此容量应该为 8.192GB（回忆：内存及以上存储器使用 2 的幂次，硬盘使用 10 的幂次）
-- D. 选项中，平均旋转延迟为 $0.5\times(60\text{s}/6000\text{RPM})=5\text{ms}$，平均访问时间为 $9\text{ms} + 5\text{ms} = 14\text{ms}$
-- E. SDRAM 和 SRAM 无关，其 S 是 Synchronous 的缩写，表示同步的意思
+---
+clicks: 8
+---
+
+# PLT 和 GOT 举例
+
+PLT & GOT Example
+
+<div grid="~ cols-2 gap-12">
+<div>
+
+```asm{all|1,2|1,2|1,2,7|1,2,7|1,2,7|1,2,4,7|1,2,4-5,7}{at:1}
+# 数据段
+# 全局偏移量表 (GOT)
+GOT[0]: addr of .dynamic
+GOT[1]: addr of reloc entries # 重定位条目的地址
+GOT[2]: addr of dynamic linker # 动态链接器的地址
+GOT[3]: 0x4005b6 # sys startup
+GOT[4]: 0x4005c6 # addvec()
+GOT[5]: 0x4005d6 # printf()
+```
+
+```asm
+# 代码段
+callq 0x4005c0 # call addvec()
+```
+
+```asm{all|1|6-7|6-7|6-8|6-9|1-3,6-9|1-4,6-9}{at:1}
+# 过程链接表 (PLT)
+# PLT[0]: call dynamic linker
+4005a0: pushq *GOT[1]
+4005a6: jmpq *GOT[2]
+...
+# PLT[2]: call addvec()
+4005c0: jmpq *GOT[4]
+4005c6: pushq $0x1 # addvec 的 ID
+4005cb: jmpq 4005a0
+```
+
+</div>
+
+<div v-click="8">
+
+```asm{1-2,7}
+# 数据段
+# 全局偏移量表 (GOT)
+GOT[0]: addr of .dynamic
+GOT[1]: addr of reloc entries
+GOT[2]: addr of dynamic linker
+GOT[3]: 0x4005b6 # sys startup
+GOT[4]: &addvec()
+GOT[5]: 0x4005d6 # printf()
+```
+
+```asm
+# 代码段
+callq 0x4005c0 # call addvec()
+```
+
+```asm{1,6-7}
+# 过程链接表 (PLT)
+# PLT[0]: call dynamic linker
+4005a0: pushq *GOT[1]
+4005a6: jmpq *GOT[2]
+...
+# PLT[2]: call addvec()
+4005c0: jmpq *GOT[4]
+4005c6: pushq $0x1
+4005cb: jmpq 4005a0
+```
 
 </div>
 </div>
@@ -966,77 +1349,114 @@ Questions
 
 ---
 
-# 存储器层次、缓存习题
+# 库打桩机制
 
-Questions
+Library Interposition
 
-如果我们希望将原来 4MB 的 cache 调整为 6MB，可以采取的做法是？
+**打桩**：在运行时替换库函数的行为。
 
-- A. 将 $S$ 从 4096 调整为 6144
-- B. 将 $E$ 从 16 调整为 24
-- C. 将 $B$ 从 64 调整为 96
-- D. 以上答案都不对
-
-<div v-click>
-
-答案：B
-
-$S$ 和 $B$ 需要是 2 的 n 次方（因为他们参与地址划分，要得到 $s = \log_2 S$ 和 $b = \log_2 B$），但 $E$ 不需要（行匹配是直接对组里的所有行进行标记（tag）位的匹配）。
-
-![cache_address](/06-Memory-Hierarchy-and-Cache/cache_address.png){.w-80.mx-auto}
-
-</div>
-
-<!-- 但是感觉有点不对，硬件结构变了吗 -->
+打桩机制有三种主要方法：
+- 编译时打桩
+- 链接时打桩
+- 运行时打桩
 
 ---
 
-# 存储器层次、缓存习题
+# 编译时打桩
 
-Questions
+Compile-Time Interposition
 
-<div class="text-sm">
+**概念**：通过在编译源代码时插入打桩函数来实现。
 
+**实现方式**：使用 `-D` 编译选项将标准函数替换为自定义函数。
 
-现在考虑另外一个计算机系统。在该系统中，存储器地址为 32 位，并采用如下的 cache：
+编译命令：
+```sh
+gcc -I.-o intc int.c mymalloc.o
+```
 
-| Cache datasize | Cache block size | Cache mode |
-| -------------- | ---------------- | ---------- |
-| 32 KiB         | 8 Bytes          | 直接映射   |
+- `-I.`：告诉编译器在当前目录（`.`）中查找头文件（Include）
+- `-o intc`：指定输出文件名为 `intc`
+- `int.c`：源文件
+- `mymalloc.o`：自定义动态库
 
-此 cache 至少要占用多少字节？ (提示：datasize + (valid bit size + tag size) * blocks)
-
-<div v-click>
-
-答案：
-
-1. 块大小 $B$ 为 $8 \text{Bytes}$，所以 $b=\log_2 8 = 3$
-2. 缓存块总共有 $C/B=32\text{KiB} / 8\text{Byte} = 4096$ 个
-3. 因为是直接映射，所以行数 $E=1$，组数 $S=\frac{C}{B\times E}=4096$，且 $s=\log_2 4096 = 12$
-4. 因为是 32 位地址，所以 $m=32$，标记位 $t = m - s - b = 32 - 12 - 3 = 17$
-5. 所以：
-<button @click="$nav.go(23)">💡</button>
-
-$$
-\text{总大小} = \text{数据大小} + (\text{有效位大小} + \text{标记位大小}) \times \text{块数} = 32 \times 1024 + (1 + 17) \times 4096 / 8 = 41984 \text{bytes}
-$$
-
-
-</div>
-
-
-</div>
-
+这样做后，会在搜索 `malloc` 时，优先搜索 `mymalloc.o` 中的 `malloc`，然后再搜索通常的系统目录。
 
 ---
 
-# 存储器层次、缓存大题
-
-Questions
-
-TODO.
 
 
+# 链接时打桩
+
+Link-Time Interposition
+
+<div grid="~ cols-2 gap-4">
+<div class="children-[p]-mt-0">
+
+
+**概念**：在链接阶段，用自定义函数替换标准库函数。
+
+**实现方式**：使用 `--wrap` 选项告诉链接器用自定义函数替换标准函数。
+
+链接命令：
+```sh
+gcc -c mymalloc.c # -c 只编译，不链接，得到 mymalloc.o
+gcc -c int.c # 得到 int.o
+# -Wl：将后面的选项传递给链接器 ld。
+gcc -Wl,--wrap,malloc \
+    -Wl,--wrap,free \
+    -o intl int.o mymalloc.o # 链接时打桩
+```
+
+
+</div>
+
+<div>
+
+
+
+```c
+// mymalloc.c
+void *__real_malloc(size_t size);
+void *__wrap_malloc(size_t size) {
+    void *ptr = __real_malloc(size); // 调用原始malloc
+    printf("malloc(%zu) = %p\n", size, ptr);
+    return ptr;
+}
+...
+
+// int.c
+#include <stdio.h>
+#include <malloc.h>
+int main(){
+    int *p = malloc(32);
+    free(p);
+    return(0);
+}
+```
+
+</div>
+</div>
+
+---
+
+# 运行时打桩
+
+Runtime Interposition
+
+**概念**：在程序运行时，动态替换库函数。
+
+**实现方式**：使用 `LD_PRELOAD` 环境变量加载自定义动态库。
+
+```sh
+gcc -shared -fpic -o mymalloc.so mymalloc.c -ldl
+LD_PRELOAD="./mymalloc.so" ./myprogram
+```
+
+- `-shared`：生成共享库
+- `-fpic`：生成位置无关代码，**这是共享库所必需的，因为共享库可以加载到内存中的任何位置**{.text-sky-5}
+- `-ldl`：链接动态链接器库，`libdl` 是动态链接器库
+- `LD_PRELOAD`：环境变量，指定在运行程序时加载的自定义动态库
 
 ---
 layout: center

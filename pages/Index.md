@@ -73,6 +73,7 @@ TOC
 4. [程序的机器表示 III & ISA](https://slide.huh.moe/04/)
 5. [处理器架构：顺序与流水线](https://slide.huh.moe/05/)
 6. [存储器层次结构、缓存](https://slide.huh.moe/06/)
+7. [链接](https://slide.huh.moe/07/)
 
 </div>
 
