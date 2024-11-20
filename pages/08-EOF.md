@@ -1750,6 +1750,8 @@ while (!pid)  /* 太慢! */
 int sigsuspend(const sigset_t *mask); // 函数声明：等待信号到来，并临时替换信号掩码
 ```
 
+`sigsuspend`：暂时使用提供的信号集替换当前的信号屏蔽字，并在收到信号后恢复原来的信号屏蔽字。
+
 等价于原子化版本的：
 
 ```c
@@ -1757,6 +1759,43 @@ sigprocmask(SIG_SETMASK, &mask, &prev); // 设置新的信号掩码，保存旧�
 pause(); // 暂停进程，直到接收到信号
 sigprocmask(SIG_SETMASK, &prev, NULL); // 恢复之前的信号掩码
 ```
+
+---
+
+# sigsuspend 函数
+
+`sigsuspend` Function
+
+```c{all|11,15-22}{maxHeight:'400px'}
+int main(int argc, char **argv)
+{
+    sigset_t mask, prev;
+
+    Signal(SIGCHLD, sigchld_handler);
+    Signal(SIGINT, sigint_handler);
+    Sigemptyset(&mask);
+    Sigaddset(&mask, SIGCHLD);
+
+    while (1) {
+        Sigprocmask(SIG_BLOCK, &mask, &prev); /* 阻塞 SIGCHLD */
+        if (Fork() == 0) /* 子进程 */
+            exit(0);
+
+        /* 等待接收 SIGCHLD */
+        pid = 0;
+        while (!pid)
+            sigsuspend(&prev);
+
+        /* 可选地解除阻塞 SIGCHLD */
+        Sigprocmask(SIG_SETMASK, &prev, NULL);
+
+        /* 接收 SIGCHLD 后做一些工作 */
+        printf(".");
+    }
+    exit(0);
+}
+```
+
 
 ---
 
