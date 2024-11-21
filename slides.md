@@ -1729,7 +1729,7 @@ while (!pid)  /* 竞争! */
     pause();
 ```
 
-这段代码中，若 `SIGCHLD` 信号发生在 `while` 测试之后，`pause` 之前，则永远不会再次唤醒。
+这段代码中，若 `SIGCHLD` 信号发生在 `while` 测试之后，`pause` 之前，由于 `SIGCHLD` 信号已被处理，`pause` 永远不会收到信号再次唤醒。
 
 
 ```c
@@ -1738,7 +1738,10 @@ while (!pid)  /* 太慢! */
     sleep(1);
 ```
 
-这段代码中，`sleep` 正确，但是间隔不好设置。
+这段代码中，`sleep` 正确，但是间隔不好设置：
+
+- 太短，则类似 `while(!pid);` 的效果，以一个非常小的时间片、非常高的频率运行，啥都没干但是一直占用 CPU，浪费资源
+- 太长，则可能等太久，即使是 1 秒、1 毫秒，对于 CPU 来说也是非常长的时间（CPU 运算速度在 $10^{-9}$ 秒（纳秒）级别）
 
 ---
 
@@ -1766,7 +1769,17 @@ sigprocmask(SIG_SETMASK, &prev, NULL); // 恢复之前的信号掩码
 
 `sigsuspend` Function
 
-```c{all|11,15-22}{maxHeight:'400px'}
+```c{all|21,25-32}{maxHeight:'400px',lines:true}
+#include "csapp.h"
+volatile sig_atomic_t pid; // 定义一个易失性的原子类型变量 pid
+void sigchld_handler(int s) // 定义一个处理 SIGCHLD 信号的处理函数
+{
+    int olderrno = errno; // 保存当前的 errno 值
+    pid = waitpid(-1, NULL, 0); // 等待任意子进程结束，并将其 pid 保存到全局变量 pid 中
+    errno = olderrno; // 恢复之前的 errno 值
+}
+void sigint_handler(int s){};
+
 int main(int argc, char **argv)
 {
     sigset_t mask, prev;
@@ -1803,7 +1816,7 @@ int main(int argc, char **argv)
 
 Nonlocal Jumps
 
-TODO.
+自学。
 
 ---
 layout: center
