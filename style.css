@@ -14,3 +14,45 @@
 h1 + p {
   @apply dark:text-gray-5 text-gray-4;
 }
+
+
+/* Transitions */
+.slidev-vclick-target {
+    transition:
+        opacity 500ms ease,
+        filter 200ms ease,
+        color 300ms ease;
+}
+
+.slidev-vclick-hidden {
+    opacity: 0;
+    pointer-events: none;
+    filter: blur(3px);
+}
+
+.fade-out-leave-active {
+    transition:
+        opacity calc(var(--slidev-transition-duration) * 0.6) ease-out,
+        filter 200ms ease;
+}
+
+.fade-out-enter-active {
+    transition:
+        opacity calc(var(--slidev-transition-duration) * 0.8) ease-in,
+        filter 200ms ease;
+    transition-delay: calc(var(--slidev-transition-duration) * 0.6);
+}
+
+.fade-out-enter-from,
+.fade-out-leave-to {
+    opacity: 0;
+    filter: blur(5px);
+}
+
+.slidev-code .line {
+    transition: opacity 200ms ease;
+}
+
+iframe {
+    background: black;
+}
