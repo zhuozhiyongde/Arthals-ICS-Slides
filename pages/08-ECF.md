@@ -6,7 +6,7 @@ theme: academic
 # background: https://cover.sli.dev
 highlighter: shiki
 # some information about your slides (markdown enabled)
-title: 08-EOF
+title: 08-ECF
 info: |
   ICS 2024 Fall Slides
   Presented by Arthals
@@ -21,7 +21,7 @@ transition: fade-out
 # enable MDC Syntax: https://sli.dev/features/mdc
 mdc: true
 layout: cover
-coverBackgroundUrl: /08-EOF/cover.jpg
+coverBackgroundUrl: /08-ECF/cover.jpg
 ---
 
 # 异常控制流 {.font-bold}
@@ -143,7 +143,7 @@ Interrupt
 
 <div>
 
-![interrupt](/08-EOF/interrupt.png){.mx-auto}
+![interrupt](/08-ECF/interrupt.png){.mx-auto}
 
 </div>
 </div>
@@ -177,7 +177,7 @@ Trap & System Call
 
 <div>
 
-![trap](/08-EOF/trap.png){.mx-auto}
+![trap](/08-ECF/trap.png){.mx-auto}
 
 </div>
 </div>
@@ -213,7 +213,7 @@ Fault
 
 <div>
 
-![fault](/08-EOF/fault.png){.mx-auto}
+![fault](/08-ECF/fault.png){.mx-auto}
 
 </div>
 </div>
@@ -258,7 +258,7 @@ Abort
 
 Common Exceptions
 
-![common_exception](/08-EOF/common_exception.png){.mx-auto}
+![common_exception](/08-ECF/common_exception.png){.mx-auto}
 
 - 中断：外部 I / O 设备
 - 陷阱（同步）：故意引发的异常，目的是进行系统调用
@@ -294,7 +294,7 @@ System Call
 
 System Call
 
-![syscall](/08-EOF/syscall.png){.mx-auto.h-50}
+![syscall](/08-ECF/syscall.png){.mx-auto.h-50}
 
 <div grid="~ cols-2 gap-12">
 <div>
@@ -399,7 +399,7 @@ Concurrent Flow
 <div>
 
 
-![concurrent](/08-EOF/concurrent.png){.mx-auto}
+![concurrent](/08-ECF/concurrent.png){.mx-auto}
 
 </div>
 </div>
@@ -428,7 +428,7 @@ Private Address Space
 
 <div flex="~ col items-center justify-center" h-full>
 
-![private_address_space](/08-EOF/private_address_space.png){.mx-auto}
+![private_address_space](/08-ECF/private_address_space.png){.mx-auto}
 
 </div>
 </div>
@@ -483,7 +483,7 @@ Context Switch
 
 Context Switch
 
-![context_switch](/08-EOF/context_switch.png){.mx-auto.h-60}
+![context_switch](/08-ECF/context_switch.png){.mx-auto.h-60}
 
 <div class="text-sm">
 
@@ -645,7 +645,7 @@ Process Fork
 此时两个进程完全相同：相同但独立的地址空间，堆栈，变量值，代码，打开的文件：
 
 
-![fork](/08-EOF/fork.png){.mx-auto.h-70}
+![fork](/08-ECF/fork.png){.mx-auto.h-70}
 
 
 ---
@@ -759,7 +759,7 @@ graph LR
 
 Process Fork
 
-![fork_example_1](/08-EOF/fork_example_1.png){.mx-auto.h-100}
+![fork_example_1](/08-ECF/fork_example_1.png){.mx-auto.h-100}
 
 ---
 
@@ -771,14 +771,14 @@ Process Fork
 <div>
 
 
-![fork_example_2_code](/08-EOF/fork_example_2_code.png){.mx-auto}
+![fork_example_2_code](/08-ECF/fork_example_2_code.png){.mx-auto}
 
 </div>
 
 <div v-click>
 
 
-![fork_example_2_ans](/08-EOF/fork_example_2_ans.png){.mx-auto}
+![fork_example_2_ans](/08-ECF/fork_example_2_ans.png){.mx-auto}
 
 </div>
 </div>
@@ -964,7 +964,7 @@ int main()
 
 `waitpid` Function
 
-![wait_example](/08-EOF/wait_example.png){.mx-auto}
+![wait_example](/08-ECF/wait_example.png){.mx-auto}
 
 注意：默认行为下，使用 `waitpid` `wait` 会 **挂起** 调用进程，直到子进程终止。
 
@@ -1095,13 +1095,13 @@ int main(int argc, char **argv, char **envp); // 注意，是 char ** 指针
 - `argv`：参数列表指针数组，argument vector
 - `envp`：环境变量数组指针，environments array pointer
 
-![argv_and_envp](/08-EOF/argv_and_envp.png){.mx-auto.h-60}
+![argv_and_envp](/08-ECF/argv_and_envp.png){.mx-auto.h-60}
 
 </div>
 
 <div>
 
-![user_stack](/08-EOF/user_stack.png){.mx-auto}
+![user_stack](/08-ECF/user_stack.png){.mx-auto}
 
 </div>
 </div>
@@ -1132,7 +1132,7 @@ Signals
 
 <div text-sm>
 
-![sig_handler](/08-EOF/sig_handler.png){.mx-auto}
+![sig_handler](/08-ECF/sig_handler.png){.mx-auto}
 
 调用结束后，若返回控制流给进程，则继续运行 $I_{next}$
 
@@ -1276,7 +1276,7 @@ Jobs
 
 <div>
 
-![process_group](/08-EOF/process_group.png){.mx-auto}
+![process_group](/08-ECF/process_group.png){.mx-auto}
 
 </div>
 </div>
@@ -1448,7 +1448,7 @@ Signal Handler
 
 **信号处理程序可以被其他信号处理程序中断**{.text-sky-5}
 
-![sig_handler_double](/08-EOF/sig_handler_double.png){.mx-auto.h-60}
+![sig_handler_double](/08-ECF/sig_handler_double.png){.mx-auto.h-60}
 
 信号处理程序是用户态的一部分，当信号处理程序捕获信号 t 并处理时，它是在用户态运行的。
 
