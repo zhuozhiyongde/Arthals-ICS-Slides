@@ -83,6 +83,7 @@ TOC
 9. [虚拟内存](https://slide.huh.moe/09/)
 10. [系统级 IO](https://slide.huh.moe/10/)
 11. [网络编程](https://slide.huh.moe/11/)
+12. [并发编程](https://slide.huh.moe/12/)
 
 </div>
 
