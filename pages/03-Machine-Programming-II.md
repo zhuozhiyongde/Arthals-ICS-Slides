@@ -1109,7 +1109,6 @@ force alignment
 
 ---
 layout: center
-class:
 ---
 
 

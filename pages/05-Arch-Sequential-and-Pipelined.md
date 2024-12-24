@@ -2096,7 +2096,6 @@ bool D_bubble =
 
 ---
 layout: center
-class:
 ---
 
 

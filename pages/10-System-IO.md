@@ -1043,7 +1043,6 @@ Keypoint：**`printf` 有缓冲区，父子进程共享；`write` 由于直接�
 
 ---
 layout: center
-class:
 ---
 
 

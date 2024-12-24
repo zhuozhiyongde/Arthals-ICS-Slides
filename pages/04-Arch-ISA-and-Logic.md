@@ -1242,7 +1242,6 @@ memory
 
 ---
 layout: center
-class:
 ---
 
 

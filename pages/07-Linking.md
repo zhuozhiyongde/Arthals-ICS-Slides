@@ -1478,7 +1478,6 @@ LD_PRELOAD="./mymalloc.so" ./myprogram
 
 ---
 layout: center
-class:
 ---
 
 

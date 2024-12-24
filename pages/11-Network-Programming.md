@@ -696,7 +696,6 @@ int open_listenfd(char *port);
 
 ---
 layout: center
-class:
 ---
 
 

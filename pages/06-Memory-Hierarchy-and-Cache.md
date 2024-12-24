@@ -1030,7 +1030,6 @@ $$
 
 ---
 layout: center
-class:
 ---
 
 

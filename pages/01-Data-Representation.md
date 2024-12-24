@@ -949,7 +949,6 @@ exception
 
 ---
 layout: center
-class:
 ---
 
 

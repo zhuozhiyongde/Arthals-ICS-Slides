@@ -261,7 +261,6 @@ layout: two-cols-header
 
 ---
 layout: center
-class:
 ---
 
 

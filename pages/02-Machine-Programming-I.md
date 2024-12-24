@@ -1347,7 +1347,6 @@ thinking questions of *Machine Prog: Control*
 
 ---
 layout: center
-class:
 ---
 
 
