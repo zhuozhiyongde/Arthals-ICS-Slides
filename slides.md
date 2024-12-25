@@ -1493,6 +1493,15 @@ void increment(void) {
 
 ---
 
+# 多线程编程
+
+Multithreaded Programming
+
+
+![multithread](/12-Concurrent-Programming/multithread.png){.h-80.mx-auto}
+
+---
+
 # 并发习题
 
 Concurrent Programming Exercises
