@@ -1492,6 +1492,245 @@ void increment(void) {
 </div>
 
 ---
+
+# 并发习题
+
+Concurrent Programming Exercises
+
+<div grid="~ cols-2 gap-8">
+<div>
+
+先前第一类读者-写者问题的解答给予读者的是有些弱的优先级，
+
+因为读者在离开它的临界区时，可能会重启一个正在等待的写者，而不是一个正在等待的读者。<span class="text-sm text-gray-5">（Why？）</span>
+
+推导出一个解答，它给予读者更强的优先级，当写者离开它的临界区的时候，，如果有读者正在等待的话，就总是重启一个正在等待的读者。
+
+<div class="text-sm text-sky-5" v-click>
+
+读者和写者竞争同一个 `w` 信号量，当一个 `V(&w)` 调用时，可能是：
+
+- 0 / 1 个读者阻塞（读者之间还有 `mutex` 互锁，拿不到 `w` 时最多有 1 个读者）
+- 多个写者阻塞
+
+</div>
+
+</div>
+
+<div>
+
+```c{all|11,26,29}{maxHeight: '400px',lines: true,at: 1}
+/* 全局变量 */
+int readcnt;         /* 初始值 = 0 */
+sem_t mutex, w;      /* 两者初始值均为 1 */
+
+void reader(void)
+{
+    while (1) {
+        P(&mutex);
+        readcnt++;
+        if (readcnt == 1) /* 第一个进入 */
+            P(&w);
+        V(&mutex);
+        /* 临界区 */
+        /* 读取操作 */
+        P(&mutex);
+        readcnt--;
+        if (readcnt == 0) /* 最后一个离开 */
+            V(&w);
+        V(&mutex);
+    }
+}
+
+void writer(void)
+{
+    while (1) {
+        P(&w);
+        /* 临界区 */
+        /* 写入操作 */
+        V(&w);
+    }
+}
+```
+
+</div>
+</div>
+
+
+---
+
+# 并发习题
+
+Concurrent Programming Exercises
+
+<div grid="~ cols-2 gap-8">
+<div text-sm>
+
+<v-clicks>
+
+1. 因为弱优先问题是由读者和写者同时阻塞在 `P(&w)` 引起的，那如果我们能让读者阻塞在 `P(&w)`，而写者阻塞在其他地方，那就能解决这个问题。
+2. 当 writer 释放 `V(&w)` 时，如果有多个读者和写者，则其中一个读者阻塞在 `P(&w)`，而所有写者都会阻塞在 `P(&writetry)`。
+3. 不过这并不能保证读者一定能继续执行，我们需要在读者继续之前锁住这个 writer，让它没法释放 `writetry`。
+4. `mutex` 正好合适，因为当有 reader 正在等待时，`mutex` 必然为 0，而这会让那个将要结束的 writer 线程阻塞，从而只有 reader 线程能继续执行下去。
+
+</v-clicks>
+
+</div>
+
+<div>
+
+```c{all|8,19,23|19,23,25|5,8,23-25}{maxHeight: '400px',lines: true,at: 2}
+/* 全局变量 */
+int readcnt = 0;
+sem_t mutex, w, writetry; /* 初始值均为 1 */
+void reader() {   /* reader代码不变 */
+    P(&mutex);
+    ++readcnt;
+    if(readcnt == 1)
+        P(&w);
+    V(&mutex);
+    /* 临界区 */
+    /* 读取操作 */
+    P(&mutex);
+    --readcnt;
+    if(readcnt == 0)
+        V(&w);
+    V(&mutex);
+}
+void writer() {
+    P(&writetry);
+    P(&w);
+    /* 临界区*/
+    /* 写入操作 */
+    V(&w);
+    P(&mutex);
+    V(&writetry);
+    V(&mutex);
+}
+```
+
+</div>
+</div>
+
+---
+
+# 并发习题
+
+Concurrent Programming Exercises
+
+<div grid="~ cols-2 gap-8">
+<div text-sm>
+
+有三个线程 `PA` `PB` `PC` 协作工作以解决文件打印问题。
+
+- `PA` 线程从磁盘读取输入存缓冲区 `Buff1`，每执行一次读入一个记录；
+- `PB` 将缓冲区 `Buff1` 的内容复制到缓冲区 `Buff2`，每执行一次复制一个记录；
+- `PC` 将缓冲区 `Buff2` 中的内容打印出来，每执行一次打印一个记录。
+
+缓冲区 `Buff1` 可以放 4 个记录，缓冲区 `Buff2` 可以放 8 个记录。
+
+请设计若干信号量，给出每一个信号量的作用和初值，然后将信号量上对应的 PV 操作填写在代码中适当位置，可以留空。
+
+</div>
+
+<div>
+
+
+
+```c{*}{maxHeight: '400px',lines: true}
+PA() {
+    while(1) {
+        // ① 
+        // 从磁盘读入一个记录
+        // ② 
+        // 将记录放入 Buff1
+        // ③ 
+    }
+}
+
+PB() {
+    while(1) {
+        // ④ 
+        // 从 Buff1 中取出一个记录
+        // ⑤ 
+        // 将记录放入 Buff2
+        // ⑥ 
+    }
+}
+
+PC() {
+    while(1) {
+        // ⑦ 
+        // 从 Buff2 中取出一个记录
+        // ⑧ 
+        // 打印
+    }
+}
+```
+
+</div>
+</div>
+
+
+---
+
+# 并发习题
+
+Concurrent Programming Exercises
+
+```c{*}{maxHeight: '400px',lines: true}
+/* 信号量 */
+sem_t empty1 /* 初值：4 */
+sem_t full1 /* 初值：0 */
+sem_t empty2 /* 初值：8 */
+sem_t full2 /* 初值：0 */
+sem_t mutex1 /* 初值：1 */
+sem_t mutex2 /* 初值：1 */
+
+PA() {
+    while(1) {
+        // NONE
+        // 从磁盘读入一个记录
+        P(&empty1);
+        P(&mutex1);
+        // 将记录放入 Buff1
+        // 这里顺序不能反，作为写者要小心
+        // 否则多个改 full1 会寄
+        V(&full1);
+        V(&mutex1);
+    }
+}
+
+PB() {
+    while(1) {
+        P(&full1);
+        P(&mutex1);
+        // 从 Buff1 中取出一个记录
+        V(&empty2);
+        P(&mutex2);
+        // 将记录放入 Buff2
+        // 这里前两项可以反，因为有 mutex1 约束不能有多个 PB
+        // 而且注意，由于要保证写入顺序，所以必然是 PB 要同时有 mutex2 和 mutex1，它是贪心怪
+        V(&mutex2);
+        V(&full2);
+        V(&mutex1);
+    }
+}
+
+PC() {
+    while(1) {
+        P(&full2);
+        P(&mutex2);
+        // 从 Buff2 中取出一个记录
+        // 顺序可以反，这里是读者，无所谓了
+        V(&mutex2);
+        V(&empty2);
+        // 打印
+    }
+}
+```
+
+---
 layout: center
 ---
 
