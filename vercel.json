@@ -1,15 +1,6 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/node",
-      "config": {
-        "installCommand": "pnpm install --frozen-lockfile",
-        "buildCommand": "chmod +x *.sh && ./apply-all.sh"
-      }
-    }
-  ],
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "chmod +x *.sh && ./apply-all.sh",
   "routes": [
     {
       "src": "/",
