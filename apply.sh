@@ -17,7 +17,7 @@ cp -r pages/$BASE* .
 FULL_NAME=$(ls ./$BASE*)
 
 # 运行 slidev build 命令
-slidev build --base /$BASE/ $FULL_NAME
+npx slidev build --base /$BASE/ $FULL_NAME
 
 # 遍历 dist 目录，删除符合条件的文件夹
 for dir in dist/[0-9]*
