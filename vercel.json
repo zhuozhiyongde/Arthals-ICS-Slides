@@ -3,16 +3,20 @@
   "buildCommand": "chmod +x *.sh && ./apply-all.sh",
   "routes": [
     {
-      "src": "/",
-      "dest": "/Index/"
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ico|json|md|txt|mp4|webm|pdf))",
+      "dest": "/$1"
     },
     {
-      "src": "/(.*)/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ico|json|md|txt|mp4|webm|pdf))",
+      "src": "^/([^/]+)/(.+)$",
       "dest": "/$1/$2"
     },
     {
-      "src": "/([^/]+)/?",
+      "src": "^/([^/]+)/?$",
       "dest": "/$1/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "outputDirectory": "dist"
