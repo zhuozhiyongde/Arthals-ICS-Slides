@@ -1,4 +1,4 @@
-npx playwright install-deps
+sudo npx playwright install-deps
 
 ./apply.sh 00
 ./apply.sh 01
