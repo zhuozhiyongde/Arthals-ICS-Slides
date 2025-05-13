@@ -27,9 +27,6 @@ importers:
         specifier: ^3.4.38
         version: 3.5.3(typescript@5.5.4)
     devDependencies:
-      '@cloudflare/playwright':
-        specifier: ^0.0.10
-        version: 0.0.10
       playwright-chromium:
         specifier: ^1.47.0
         version: 1.47.0
@@ -207,9 +204,6 @@ packages:
 
   '@chevrotain/utils@11.0.3':
     resolution: {integrity: sha512-YslZMgtJUyuMbZ+aKvfF3x1f5liK4mWNxghFRv7jqRR9C3R3fAOGTTKvxXDa2Y1s9zSbcpuO0cAxDYsc9SrXoQ==}
-
-  '@cloudflare/playwright@0.0.10':
-    resolution: {integrity: sha512-phlOzpO5FLgXFbx20C2GyQonffpe+qdL/MSMOf7ryc3+WjEsRrr6zqVLVJJq9ZW4CEypee1e/wcUQ473srC2dA==}
 
   '@drauu/core@0.4.1':
     resolution: {integrity: sha512-louDq3aq9ovgMUuwA1c1ZcLa0pJXdoDkZLFYReE13xKgG7czEZh20zJ6+dHUh1ng/3UPbGXlbAU7KGjkTNec6Q==}
@@ -3117,8 +3111,6 @@ snapshots:
   '@chevrotain/types@11.0.3': {}
 
   '@chevrotain/utils@11.0.3': {}
-
-  '@cloudflare/playwright@0.0.10': {}
 
   '@drauu/core@0.4.1': {}
 
