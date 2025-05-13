@@ -1,7 +1,28 @@
 {
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": {
+        "installCommand": "pnpm install --frozen-lockfile",
+        "buildCommand": "chmod +x ./apply-all.sh && ./apply-all.sh"
+      }
+    }
   ],
-  "buildCommand": "npm run build",
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/Index/"
+    },
+    {
+      "src": "/(.*)/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ico|json|md|txt|mp4|webm|pdf))",
+      "dest": "/$1/$2"
+    },
+    {
+      "src": "/([^/]+)/?",
+      "dest": "/$1/index.html"
+    }
+  ],
   "outputDirectory": "dist"
 }
