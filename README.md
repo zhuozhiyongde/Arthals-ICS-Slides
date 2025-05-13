@@ -20,6 +20,8 @@ cp pages/12-Concurrent-Programming.md slides.md
 pnpm run dev
 ```
 
+你可能需要注释掉文件开头 `Formatter` 里的 `presenter: false` 以启用演讲者模式。
+
 ## 许可
 
 GPLv3 / CC-BY-NC-SA 4.0

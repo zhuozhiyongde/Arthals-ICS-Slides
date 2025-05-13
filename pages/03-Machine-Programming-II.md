@@ -10,6 +10,8 @@ title: 03-Machine-Programming-II
 info: |
   ICS 2024 Fall Slides
   Presented by Arthals
+presenter: false
+download: true
 titleTemplate: '%s'
 # apply unocss classes to the current slide
 class: text-center
