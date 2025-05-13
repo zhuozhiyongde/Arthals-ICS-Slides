@@ -6,7 +6,7 @@
       "use": "@vercel/node",
       "config": {
         "installCommand": "pnpm install --frozen-lockfile",
-        "buildCommand": "chmod +x ./apply-all.sh && ./apply-all.sh"
+        "buildCommand": "chmod +x *.sh && ./apply-all.sh"
       }
     }
   ],
