@@ -93,7 +93,6 @@ TOC
 
 ---
 layout: center
-class:
 ---
 
 
