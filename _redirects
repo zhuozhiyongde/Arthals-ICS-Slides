@@ -1,0 +1,2 @@
+/:segment /index.html 200
+/:first_segment/* /:first_segment/index.html 200
