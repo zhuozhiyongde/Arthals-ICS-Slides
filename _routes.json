@@ -8,7 +8,7 @@
     ],
     "rules": [
         {
-            "source": "^/([^/.]+)/?$",
+            "source": "^/([^/]+)/(.*)$",
             "destination": "/$1/index.html"
         },
         {
