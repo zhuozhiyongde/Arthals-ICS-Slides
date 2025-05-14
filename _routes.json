@@ -1,29 +1,19 @@
 {
     "version": 1,
     "include": [
-        "*"
+        "/*"
     ],
-    "exclude": [],
+    "exclude": [
+        "/.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ico|json|md|txt|mp4|webm|pdf)$"
+    ],
     "rules": [
         {
-            "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ico|json|md|txt|mp4|webm|pdf))",
-            "destination": "/$1",
-            "status": 200
-        },
-        {
-            "source": "/:dir/:file+",
-            "destination": "/:dir/:file+",
-            "status": 200
-        },
-        {
-            "source": "/:dir",
-            "destination": "/:dir/index.html",
-            "status": 200
+            "source": "^/([^/.]+)/?$",
+            "destination": "/$1/index.html"
         },
         {
             "source": "/(.*)",
-            "destination": "/index.html",
-            "status": 200
+            "destination": "/index.html"
         }
     ]
 }
