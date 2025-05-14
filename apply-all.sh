@@ -17,3 +17,4 @@
 mkdir -p dist/
 mv dist_tmp/* dist/
 rm -rf dist_tmp
+cp _redirects dist/
