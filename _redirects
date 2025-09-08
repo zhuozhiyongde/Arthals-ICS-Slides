@@ -1,2 +1,21 @@
+# Allow static assets to be served directly
+/*.js /$1 200
+/*.css /$1 200
+/*.png /$1 200
+/*.jpg /$1 200
+/*.jpeg /$1 200
+/*.gif /$1 200
+/*.svg /$1 200
+/*.woff /$1 200
+/*.woff2 /$1 200
+/*.ico /$1 200
+/*.json /$1 200
+/*.md /$1 200
+/*.txt /$1 200
+/*.mp4 /$1 200
+/*.webm /$1 200
+/*.pdf /$1 200
+
+# Redirect segment paths to index.html
 /:segment /index.html 200
 /:first_segment/* /:first_segment/index.html 200

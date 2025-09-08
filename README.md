@@ -2,7 +2,7 @@
 
 我的 2024 年秋季学期 ICS 小班授课 Slides。
 
-基于 [Slidev](https://sli.dev/) 构建。
+基于 [Slidev](https://sli.dev/) 构建，并使用 [Cloudflare Pages](https://pages.cloudflare.com/) 部署。
 
 ## 使用
 
@@ -58,4 +58,14 @@ GPLv3 / CC-BY-NC-SA 4.0
 
 最后的最后，以一句我高中写作文的时候最喜欢的诗作为结尾：
 
-> 希君生羽翼，一化北溟鱼。
+<div align="center">
+
+**希君生羽翼，一化北溟鱼。**
+
+</div>
+
+<div align="right">
+
+![signature](README.assets/signature.svg)
+
+</div>
