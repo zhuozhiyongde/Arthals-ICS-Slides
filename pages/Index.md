@@ -109,6 +109,6 @@ Made by Arthals with ❤️ ~~and hair~~ {.mb-4}
 
 </div>
 
-![wechat](/wechat.jpg){.w-40.rounded-md}
+![wechat](https://slide.huh.moe/00/wechat.jpg){.w-40.rounded-md}
 
 </div>
