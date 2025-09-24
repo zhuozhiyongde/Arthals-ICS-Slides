@@ -586,7 +586,7 @@ special arithmetic operations
 |----------|-------------------------------------------------|-----------------------|
 | `imulq S`| `R[%rdx]:R[%rax] ← S × R[%rax]`               | 有符号全乘法          |
 | `mulq S` | `R[%rdx]:R[%rax] ← S × R[%rax]`                | 无符号全乘法          |
-| `cqto`   | `R[%rdx]:R[%rax] ← SignExtend(R[%rax])`       | 转换为八字节          |
+| `cqto`   | `R[%rdx]:R[%rax] ← SignExtend(R[%rax])`       | 转换为八字          |
 | `idivq S`| `R[%rdx] ← R[%rax] mod S; R[%rax] ← R[%rdx] ÷ S` | 有符号除法            |
 | `divq S` | `R[%rdx] ← R[%rax] mod S; R[%rax] ← R[%rdx] ÷ S` | 无符号除法            |
 
