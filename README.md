@@ -9,15 +9,15 @@
 ```bash
 git clone https://github.com/zhuozhiyongde/Arthals-ICS-Slides.git
 cd Arthals-ICS-Slides
-pnpm install
-pnpm run dev
+bun install
+bun dev
 ```
 
 如果你想查看某一章的内容，请使用如下命令（以第 12 章为例）：
 
 ```bash
 cp pages/12-Concurrent-Programming.md slides.md
-pnpm run dev
+bun dev
 ```
 
 你可能需要注释掉文件开头 `Formatter` 里的 `presenter: false` 以启用演讲者模式。
